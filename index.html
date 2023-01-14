@@ -1,0 +1,17 @@
+<script src="/socket.io/socket.io.js">
+</script>
+
+<script>
+    const socket = io('http://localhost:3000')
+
+    const deviceStatus = {
+        id: '1',
+        state: '1',
+    }
+
+    socket.emit('update_state', deviceStatus)
+
+    socket.on('msg', data => {
+        console.log('Server', data)
+    })
+</script>
