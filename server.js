@@ -42,4 +42,20 @@ io.on('connection', socket => {
         });
         //io.emit('msg', 'Halo')
     })
+
+    socket.on('request_push', push_data => {
+        console.log(push_data)
+        const pushJSON = JSON.stringify(push_data)
+        const parsedpush = JSON.parse(pushJSON)
+        console.log(parsedpush.token)
+        console.log(parsedpush.device_id)
+        console.log(parsedpush.expect_state)
+        connection.query(`INSERT INTO PushAlert (Token, device_id, Expect_Status) VALUES (${parsedpush.token},${parsedpush.device_id},${parsedpush.expect_state})`, function (error, results, fields) {
+            if (error) {
+                console.log(error);
+            }
+            console.log(results);
+        });
+        //io.emit('msg', 'Halo')
+    })
 })
