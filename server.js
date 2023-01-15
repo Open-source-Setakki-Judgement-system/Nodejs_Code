@@ -83,6 +83,12 @@ io.on('connection', socket => {
         //io.emit('msg', 'Halo')
     })
 
+    socket.on('test', test => {
+        console.log(test)
+        io.emit('msg', 'Halo')
+        io.emit('msg', test)
+    })
+
     socket.on('request_push', push_data => {
         console.log(push_data)
         const pushJSON = JSON.stringify(push_data)
