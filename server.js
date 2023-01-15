@@ -8,7 +8,7 @@ app.use(cors())
 const http = require('http').createServer(app)
 const io = require('socket.io')(http)
 let serAccount = require('./firebase_token.json')
-const port = 3000
+const port = 1900
 
 admin.initializeApp({
     credential: admin.credential.cert(serAccount),
