@@ -34,8 +34,8 @@ app.get('/', (req, res) => {
 })
 
 app.get('/hi', (req, res) => {
-    let target_tokens = new Array();
     connection.query(`SELECT Token FROM PushAlert;`, function (error, results, fields) {
+        let target_tokens = new Array();
         if (error) {
             console.log(error);
         }
@@ -44,45 +44,33 @@ app.get('/hi', (req, res) => {
         for (var i = 0; i < results.length; i++) {
             console.log(results[i].Token);
             target_tokens[i]=results[i].Token;
+            console.log(target_tokens[i]);
         }
-    });
-    // let target_token = ["c_cffKHoRcGhXqYB7uNiXZ:APA91bFqiO_e_Or_6HR9iZeU6grfidkU25YDA2mcty1chchsW_42u3MRMiRGH6YEoYt4iulhYJM3xvrmiZPEdOZbHDxyofdq8hRnBut3ztsVYSqHwcdPzr-5i2ePgAVw9Gafs_G7sn59",]
-    // //target_token은 푸시 메시지를 받을 디바이스의 토큰값입니다
-
-    let message = {
-        notification: {
-            title: '일해라',
-            body: 'Multicast테스트',
-        },
-        tokens: target_tokens,
-        android: {
-            priority: "high"
-        },
-        apns: {
-            payload: {
-                aps: {
-                    contentAvailable: true,
+        console.log(target_tokens);
+        let message = {
+            notification: {
+                title: '일해라',
+                body: 'Multicast테스트',
+            },
+            tokens: target_tokens,
+            android: {
+                priority: "high"
+            },
+            apns: {
+                payload: {
+                    aps: {
+                        contentAvailable: true,
+                    }
                 }
             }
         }
-    }
-    console.log(target_tokens);
-    // fcm
-    //     .messaging()
-    //     .send(message)
-    //     .then(function (response) {
-    //         console.log('Successfully sent message: : ', response)
-    //     })
-    //     .catch(function (err) {
-    //         console.log('Error Sending message!!! : ', err)
-    //     })
-    fcm.messaging().sendMulticast(message)
+        fcm.messaging().sendMulticast(message)
         .then((response) => {
             if (response.failureCount > 0) {
                 const failedTokens = [];
                 response.responses.forEach((resp, idx) => {
                     if (!resp.success) {
-                        failedTokens.push(deviceToken[idx]);
+                        failedTokens.push(target_tokens[idx]);
                     }
                 });
                 console.log('List of tokens that caused failures: ' + failedTokens);
@@ -90,6 +78,7 @@ app.get('/hi', (req, res) => {
             console.log('success')
             return res.status(200).json({success: true})
         });
+    });
 })
 
 application.on('connection', socket => {
@@ -109,7 +98,7 @@ application.on('connection', socket => {
         console.log(parsedpush.token)
         console.log(parsedpush.device_id)
         console.log(parsedpush.expect_state)
-        connection.query(`INSERT INTO PushAlert (Token, device_id, Expect_Status) VALUES (${parsedpush.token},${parsedpush.device_id},${parsedpush.expect_state})`, function (error, results, fields) {
+        connection.query(`INSERT INTO PushAlert (Token, device_id, Expect_Status) VALUES (${parsedpush.token},${parsedpush.device_id},${parsedpush.expect_state});`, function (error, results, fields) {
             if (error) {
                 console.log(error);
             }
@@ -121,7 +110,6 @@ application.on('connection', socket => {
 
 gateway.on('connection', socket => {
     console.log('connected', socket.id)
-
 
     socket.on('update_state', state_data => {
         console.log(state_data)
@@ -136,12 +124,60 @@ gateway.on('connection', socket => {
             console.log(results);
         });
         application.emit('update', state_data)
+
         connection.query(`SELECT Token FROM PushAlert WHERE device_id = ${parsedstate.id} AND Expect_Status = ${parsedstate.state};`, function (error, results, fields) {
+            let target_tokens = new Array();
+            if (error) {
+                console.log(error);
+            }
+            console.log(results);
+            console.log(results.length);
+            for (var i = 0; i < results.length; i++) {
+                console.log(results[i].Token);
+                target_tokens[i]=results[i].Token;
+                console.log(target_tokens[i]);
+            }
+            console.log(target_tokens);
+            let message = {
+                notification: {
+                    title: '세탁기/건조기 알림',
+                    body: `${parsedstate.id}번 세탁기/건조기의 동작이 완료되었습니다.`,
+                },
+                tokens: target_tokens,
+                android: {
+                    priority: "high"
+                },
+                apns: {
+                    payload: {
+                        aps: {
+                            contentAvailable: true,
+                        }
+                    }
+                }
+            }
+            fcm.messaging().sendMulticast(message)
+            .then((response) => {
+                if (response.failureCount > 0) {
+                    const failedTokens = [];
+                    response.responses.forEach((resp, idx) => {
+                        if (!resp.success) {
+                            failedTokens.push(target_tokens[idx]);
+                        }
+                    });
+                    console.log('List of tokens that caused failures: ' + failedTokens);
+                }
+                console.log('success')
+                return res.status(200).json({success: true})
+            });
+        });
+
+        connection.query(`DELETE FROM PushAlert WHERE device_id = ${parsedstate.id} AND Expect_Status = ${parsedstate.state};`, function (error, results, fields) {
             if (error) {
                 console.log(error);
             }
             console.log(results);
         });
+
         //io.emit('msg', 'Halo')
     })
 
