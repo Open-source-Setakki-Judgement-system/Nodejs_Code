@@ -34,7 +34,7 @@ app.get('/', (req, res) => {
 })
 
 app.get('/hi', (req, res) => {
-    var target_tokens = new Array();
+    let target_tokens = new Array();
     connection.query(`SELECT Token FROM PushAlert;`, function (error, results, fields) {
         if (error) {
             console.log(error);
@@ -46,9 +46,6 @@ app.get('/hi', (req, res) => {
             target_tokens[i]=results[i].Token;
         }
     });
-    console.log('blyat');
-    console.log(target_tokens);
-    console.log('blyat');
     // let target_token = ["c_cffKHoRcGhXqYB7uNiXZ:APA91bFqiO_e_Or_6HR9iZeU6grfidkU25YDA2mcty1chchsW_42u3MRMiRGH6YEoYt4iulhYJM3xvrmiZPEdOZbHDxyofdq8hRnBut3ztsVYSqHwcdPzr-5i2ePgAVw9Gafs_G7sn59",]
     // //target_token은 푸시 메시지를 받을 디바이스의 토큰값입니다
 
@@ -69,7 +66,7 @@ app.get('/hi', (req, res) => {
             }
         }
     }
-
+    console.log(target_tokens);
     // fcm
     //     .messaging()
     //     .send(message)
