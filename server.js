@@ -43,7 +43,7 @@ app.get('/hi', (req, res) => {
         console.log(results.length);
         for (var i = 0; i < results.length; i++) {
             console.log(results[i].Token);
-            tokens[i]=results[i].Token;
+            target_tokens[i]=results[i].Token;
         }
     });
     // let target_token = ["c_cffKHoRcGhXqYB7uNiXZ:APA91bFqiO_e_Or_6HR9iZeU6grfidkU25YDA2mcty1chchsW_42u3MRMiRGH6YEoYt4iulhYJM3xvrmiZPEdOZbHDxyofdq8hRnBut3ztsVYSqHwcdPzr-5i2ePgAVw9Gafs_G7sn59",]
