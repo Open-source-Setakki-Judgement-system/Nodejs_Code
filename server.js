@@ -98,7 +98,7 @@ application.on('connection', socket => {
         console.log(parsedpush.token)
         console.log(parsedpush.device_id)
         console.log(parsedpush.expect_state)
-        connection.query(`INSERT INTO PushAlert (Token, device_id, Expect_Status) VALUES (${parsedpush.token},${parsedpush.device_id},${parsedpush.expect_state});`, function (error, results, fields) {
+        connection.query(`INSERT INTO PushAlert (Token, device_id, Expect_Status) VALUES ('${parsedpush.token}',${parsedpush.device_id},${parsedpush.expect_state});`, function (error, results, fields) {
             if (error) {
                 console.log(error);
             }
