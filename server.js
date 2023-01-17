@@ -138,6 +138,9 @@ io.on('connection', socket => {
                 console.log(target_tokens[i]);
             }
             console.log(target_tokens);
+            if(target_tokens == 0){
+                return
+            }
             let message = {
                 notification: {
                     title: '세탁기/건조기 알림',
