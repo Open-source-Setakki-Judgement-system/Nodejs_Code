@@ -108,7 +108,7 @@ application.on('connection', socket => {
     })
 })
 
-gateway.on('connection', socket => {
+io.on('connection', socket => {
     console.log('connected', socket.id)
 
     socket.on('update_state', state_data => {
