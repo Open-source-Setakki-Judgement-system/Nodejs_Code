@@ -1,5 +1,7 @@
 var.js
 firebase_token.json
+privkey.pem
+cert.pem
 # Created by https://www.toptal.com/developers/gitignore/api/node
 # Edit at https://www.toptal.com/developers/gitignore?templates=node
 

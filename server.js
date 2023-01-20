@@ -3,14 +3,21 @@ const express = require('express')
 const cors = require('cors')
 var mysql = require('mysql');
 const fcm = require('firebase-admin')
+const fs = require('fs');
 const app = express()
 app.use(cors())
+const https = require('https');
 const http = require('http').createServer(app)
 const io = require('socket.io')(http)
 const application = io.of('/application');
 const gateway = io.of('/gateway');
 let serAccount = require('./firebase_token.json')
 const port = 80
+
+const options = {
+    key: fs.readFileSync('./privkey.pem'),
+    cert: fs.readFileSync('./cert.pem')
+  };
 
 fcm.initializeApp({
     credential: fcm.credential.cert(serAccount),
@@ -24,6 +31,7 @@ var connection = mysql.createConnection({
 });
 
 connection.connect();
+https.createServer(options, app).listen(443);
 
 http.listen(port, () => {
     console.log(`Listening to port ${port}`)
