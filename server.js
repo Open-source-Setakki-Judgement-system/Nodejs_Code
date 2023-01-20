@@ -6,6 +6,10 @@ const fcm = require('firebase-admin')
 const fs = require('fs');
 const app = express()
 app.use(cors())
+const options = {
+    key: fs.readFileSync('./privkey.pem'),
+    cert: fs.readFileSync('./cert.pem')
+  };
 const https = require('https').createServer(options, app);
 const http = require('http').createServer(app)
 const io = require('socket.io')(http)
@@ -15,10 +19,7 @@ let serAccount = require('./firebase_token.json')
 const http_port = 80
 const https_port = 443
 
-const options = {
-    key: fs.readFileSync('./privkey.pem'),
-    cert: fs.readFileSync('./cert.pem')
-  };
+
 
 fcm.initializeApp({
     credential: fcm.credential.cert(serAccount),
