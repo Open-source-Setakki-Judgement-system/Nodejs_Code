@@ -130,7 +130,7 @@ io.on('connection', socket => {
         console.log(parsedstate.id)
         console.log(parsedstate.state)
         console.log(parsedstate.alive)
-        connection.query(`UPDATE deviceStatus SET state = ${parsedstate.state} WHERE id =${parsedstate.id};`, function (error, results, fields) {
+        connection.query(`UPDATE deviceStatus SET state = ${parsedstate.state}, alive = ${parsedstate.alive} WHERE id =${parsedstate.id};`, function (error, results, fields) {
             if (error) {
                 console.log(error);
             }
