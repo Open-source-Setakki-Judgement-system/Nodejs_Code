@@ -101,9 +101,10 @@ application.on('connection', socket => {
             console.log(error);
         }
         console.log(results);
-        for (var i = 0; i < results.length; i++) {
-            application.emit('update', results[i])
-        }
+        application.emit('update', results)
+        // for (var i = 0; i < results.length; i++) {
+        //     application.emit('update', results[i])
+        // }
     });
 
     socket.on('test', test => {
