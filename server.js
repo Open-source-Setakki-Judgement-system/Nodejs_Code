@@ -12,7 +12,7 @@ const options = {
   };
 const https = require('https').createServer(options, app);
 const http = require('http').createServer(app)
-const io = require('socket.io')(http)
+const io = require('socket.io')(https)
 const application = io.of('/application');
 const gateway = io.of('/gateway');
 let serAccount = require('./firebase_token.json')
