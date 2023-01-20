@@ -96,6 +96,13 @@ app.get('/', (req, res) => {
 application.on('connection', socket => {
     console.log('connected', socket.id)
 
+    connection.query(`SELECT * FROM deviceStatus;`, function (error, results, fields) {
+        if (error) {
+            console.log(error);
+        }
+        console.log(results);
+    });
+
     socket.on('test', test => {
         console.log('application')
         console.log(test)
