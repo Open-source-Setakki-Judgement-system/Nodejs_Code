@@ -10,7 +10,7 @@ const io = require('socket.io')(http)
 const application = io.of('/application');
 const gateway = io.of('/gateway');
 let serAccount = require('./firebase_token.json')
-const port = 1900
+const port = 80
 
 fcm.initializeApp({
     credential: fcm.credential.cert(serAccount),
@@ -33,53 +33,53 @@ app.get('/', (req, res) => {
     res.sendFile(__dirname + '/index.html')
 })
 
-app.get('/hi', (req, res) => {
-    connection.query(`SELECT Token FROM PushAlert;`, function (error, results, fields) {
-        let target_tokens = new Array();
-        if (error) {
-            console.log(error);
-        }
-        console.log(results);
-        console.log(results.length);
-        for (var i = 0; i < results.length; i++) {
-            console.log(results[i].Token);
-            target_tokens[i]=results[i].Token;
-            console.log(target_tokens[i]);
-        }
-        console.log(target_tokens);
-        let message = {
-            notification: {
-                title: '일해라',
-                body: 'Multicast테스트',
-            },
-            tokens: target_tokens,
-            android: {
-                priority: "high"
-            },
-            apns: {
-                payload: {
-                    aps: {
-                        contentAvailable: true,
-                    }
-                }
-            }
-        }
-        fcm.messaging().sendMulticast(message)
-        .then((response) => {
-            if (response.failureCount > 0) {
-                const failedTokens = [];
-                response.responses.forEach((resp, idx) => {
-                    if (!resp.success) {
-                        failedTokens.push(target_tokens[idx]);
-                    }
-                });
-                console.log('List of tokens that caused failures: ' + failedTokens);
-            }
-            console.log('success')
-            return res.status(200).json({success: true})
-        });
-    });
-})
+// app.get('/hi', (req, res) => {
+//     connection.query(`SELECT Token FROM PushAlert;`, function (error, results, fields) {
+//         let target_tokens = new Array();
+//         if (error) {
+//             console.log(error);
+//         }
+//         console.log(results);
+//         console.log(results.length);
+//         for (var i = 0; i < results.length; i++) {
+//             console.log(results[i].Token);
+//             target_tokens[i]=results[i].Token;
+//             console.log(target_tokens[i]);
+//         }
+//         console.log(target_tokens);
+//         let message = {
+//             notification: {
+//                 title: '일해라',
+//                 body: 'Multicast테스트',
+//             },
+//             tokens: target_tokens,
+//             android: {
+//                 priority: "high"
+//             },
+//             apns: {
+//                 payload: {
+//                     aps: {
+//                         contentAvailable: true,
+//                     }
+//                 }
+//             }
+//         }
+//         fcm.messaging().sendMulticast(message)
+//         .then((response) => {
+//             if (response.failureCount > 0) {
+//                 const failedTokens = [];
+//                 response.responses.forEach((resp, idx) => {
+//                     if (!resp.success) {
+//                         failedTokens.push(target_tokens[idx]);
+//                     }
+//                 });
+//                 console.log('List of tokens that caused failures: ' + failedTokens);
+//             }
+//             console.log('success')
+//             return res.status(200).json({success: true})
+//         });
+//     });
+// })
 
 application.on('connection', socket => {
     console.log('connected', socket.id)
@@ -117,6 +117,7 @@ io.on('connection', socket => {
         const parsedstate = JSON.parse(stateJSON)
         console.log(parsedstate.id)
         console.log(parsedstate.state)
+        console.log(parsedstate.alive)
         connection.query(`UPDATE deviceStatus SET state = ${parsedstate.state} WHERE id =${parsedstate.id};`, function (error, results, fields) {
             if (error) {
                 console.log(error);
