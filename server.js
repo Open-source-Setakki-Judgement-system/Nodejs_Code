@@ -102,7 +102,7 @@ application.on('connection', socket => {
         }
         console.log(results);
         for (var i = 0; i < results.length; i++) {
-            application.emit('update', result.[i])
+            application.emit('update', result[i])
         }
     });
 
