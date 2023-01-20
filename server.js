@@ -187,8 +187,8 @@ io.on('connection', socket => {
     socket.on('test', test => {
         console.log('gateway')
         console.log(test)
-        gateway.emit('msg', 'Halo')
-        gateway.emit('msg', test)
+        io.emit('msg', 'Halo')
+        io.emit('msg', test)
     })
 
 })
