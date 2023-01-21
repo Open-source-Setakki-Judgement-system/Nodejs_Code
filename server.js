@@ -6,6 +6,7 @@ const fcm = require('firebase-admin')
 const fs = require('fs');
 const app = express()
 app.use(cors())
+require('console-stamp')(console, 'yyyy/mm/dd HH:MM:ss.l');
 const options = {
     key: fs.readFileSync('./privkey.pem'),
     cert: fs.readFileSync('./cert.pem')
@@ -102,9 +103,6 @@ application.on('connection', socket => {
         }
         console.log(results);
         application.emit('update', results)
-        // for (var i = 0; i < results.length; i++) {
-        //     application.emit('update', results[i])
-        // }
     });
 
     socket.on('test', test => {
@@ -147,7 +145,13 @@ io.on('connection', socket => {
             }
             console.log(results);
         });
-        application.emit('update', state_data)
+        connection.query(`SELECT * FROM deviceStatus;`, function (error, results, fields) {
+            if (error) {
+                console.log(error);
+            }
+            console.log(results);
+            application.emit('update', results)
+        });
 
         connection.query(`SELECT Token FROM PushAlert WHERE device_id = ${parsedstate.id} AND Expect_Status = ${parsedstate.state};`, function (error, results, fields) {
             let target_tokens = new Array();
