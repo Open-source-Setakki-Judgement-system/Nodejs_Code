@@ -2,29 +2,38 @@
 </script>
 
 <script>
-    const socket = io('https://osj.pnxelec.com/application')
+  const socket = io('https://osj.pnxelec.com/application')
 
-    // const deviceStatus = {
-    //     id: '1',
-    //     state: '1',
-    // }
+  // const deviceStatus = {
+  //     id: '1',
+  //     state: '1',
+  // }
 
-    socket.emit('test', 'YaHallo')
+  socket.emit('test', 'YaHallo')
 
-    socket.on('msg', data => {
-        console.log('Server', data)
-    })
-    socket.on('update', data => {
-        console.log('Server', data)
-    })
+  socket.on('msg', data => {
+    console.log('Server', data)
+  })
+  socket.on('update', data => {
+    console.log('Server', data)
+  })
 </script>
-<!-- <html>
+<html>
+
 <head>
   <meta charset="utf-8" />
   <title>Lotura</title>
 </head>
+
 <body>
-  <div>This is page of project "Lotura".</div>
-  <meta http-equiv="refresh" content="0; url=https://github.com/Open-source-Setakki-Judgement-system"></meta>
+  <!-- <div>This is page of project "Lotura".</div>
+  <meta http-equiv="refresh" content="0; url=https://github.com/Open-source-Setakki-Judgement-system"></meta> -->
+  <button onclick="YaHallo()">YaHallo</button>
+  <script>
+    function YaHallo() {
+      socket.emit('test', 'YaHallo')
+    }
+  </script>
 </body>
-</html> -->
+
+</html>
