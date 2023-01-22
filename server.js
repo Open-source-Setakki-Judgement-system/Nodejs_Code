@@ -46,6 +46,10 @@ app.get('/', (req, res) => {
     res.sendFile(__dirname + '/index.html')
 })
 
+app.get('/hi', (req, res) => {
+    application.emit('test', 'Halo')
+})
+
 // app.get('/hi', (req, res) => {
 //     connection.query(`SELECT Token FROM PushAlert;`, function (error, results, fields) {
 //         let target_tokens = new Array();
