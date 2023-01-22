@@ -47,7 +47,9 @@ app.get('/', (req, res) => {
 })
 
 app.get('/hi', (req, res) => {
+    res.sendFile(__dirname + '/test.html')
     application.emit('test', 'Halo')
+    console.log('Halo')
 })
 
 // app.get('/hi', (req, res) => {
