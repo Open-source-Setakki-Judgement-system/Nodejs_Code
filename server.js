@@ -55,19 +55,19 @@ app.get('/hi', (req, res) => {
 app.get('/YaHallo', (req, res) => {
     res.sendFile(__dirname + '/test.html')
     application.emit('test', 'YaHallo')
-    console.log('Halo')
+    console.log('YaHallo')
 })
 
 app.get('/yee', (req, res) => {
     res.sendFile(__dirname + '/test.html')
     application.emit('test', 'yee')
-    console.log('Halo')
+    console.log('yee')
 })
 
 app.get('/nya', (req, res) => {
     res.sendFile(__dirname + '/test.html')
     application.emit('test', 'nya')
-    console.log('Halo')
+    console.log('nya')
 })
 
 // app.get('/hi', (req, res) => {
