@@ -222,7 +222,7 @@ io.on('connection', socket => {
                     console.log('List of tokens that caused failures: ' + failedTokens);
                 }
                 console.log('success')
-                return res.status(200).json({success: true})
+                return
             });
         });
 
