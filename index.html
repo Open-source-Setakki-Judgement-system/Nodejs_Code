@@ -31,7 +31,12 @@
   <button onclick="YaHallo()">YaHallo</button>
   <script>
     function YaHallo() {
-      socket.emit('test', 'YaHallo')
+      let json = {
+        "id":5,
+        "alive":1,
+        "state":1
+      };
+      socket.emit('test', json)
     }
   </script>
 </body>
