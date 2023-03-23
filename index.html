@@ -2,12 +2,13 @@
 </script>
 
 <script>
-  const socket = io('https://osj.pnxelec.com/application')
+  const socket = io('https://osj.pnxelec.com')
 
-  // const deviceStatus = {
-  //     id: '1',
-  //     state: '1',
-  // }
+  const deviceStatus = {
+      id: '5',
+      state: '1',
+      alive: '1',
+  }
 
   socket.emit('test', 'YaHallo')
 
@@ -31,12 +32,12 @@
   <button onclick="YaHallo()">YaHallo</button>
   <script>
     function YaHallo() {
-      let json = {
-        "id":5,
-        "alive":1,
-        "state":1
-      };
-      socket.emit('update_state', 'YaHallo')
+      // let json = {
+      //   "id":5,
+      //   "alive":1,
+      //   "state":1
+      // };
+      socket.emit('update_state', deviceStatus)
     }
   </script>
 </body>
