@@ -19,14 +19,11 @@ const https = require('https').createServer(options, app);
 const http = require('http').createServer(app)
 const io = require('socket.io')(https)
 const application = io.of('/application');
-const gateway = io.of('/gateway');
 
 const serAccount = require('./firebase_token.json')
 
 const http_port = 80
 const https_port = 443
-
-
 
 fcm.initializeApp({
     credential: fcm.credential.cert(serAccount),
@@ -38,7 +35,6 @@ const connection = mysql.createConnection({
     password: dbsettings.pw,
     database: dbsettings.db
 });
-
 
 http.listen(http_port, () => {
     console.log(`Listening to port ${http_port}`)
@@ -52,62 +48,33 @@ app.get('/', (req, res) => {
     res.sendFile(__dirname + '/index.html')
 })
 
-application.on('connection', socket => {
-    console.log('connected', socket.id)
-
-    connection.query(`SELECT * FROM deviceStatus;`, function (error, results) {
-        if (error) {
-            console.log(error);
-            return;
-        }
-        console.log(results);
-        application.emit('update', results)
-    });
-
-    socket.on('test', test => {
-        console.log('application')
-        console.log(test)
-        application.emit('msg', 'Halo')
-        application.emit('msg', test)
-    })
-
-    socket.on('request_push', push_data => {
-        console.log(push_data)
-        const pushJSON = JSON.stringify(push_data)
-        const parsedpush = JSON.parse(pushJSON)
-        console.log(parsedpush.token)
-        console.log(parsedpush.device_id)
-        console.log(parsedpush.expect_state)
-        connection.query(`INSERT INTO PushAlert (Token, device_id, Expect_Status) VALUES (?, ?, ?);`, [parsedpush.token, parsedpush.device_id, parsedpush.expect_state], (error, results) => {
-            if (error) {
-                console.log(error);
-                return;
-            }
-            console.log(results);
-        });
-        //io.emit('msg', 'Halo')
-    })
-})
+//Socket.io-Gateway
 
 io.on('connection', socket => {
-    console.log('connected', socket.id)
+    console.log('Socket.IO Connected:', socket.id)
 
     socket.on('update_state', state_data => {
-        console.log(state_data)
-        const stateJSON = JSON.stringify(state_data)
-        const parsedstate = JSON.parse(stateJSON)
-        console.log(parsedstate.id)
-        console.log(parsedstate.state)
-        console.log(parsedstate.alive)
-        connection.query(`UPDATE deviceStatus SET state = ?, alive = ? WHERE id = ?;`, [parsedstate.state, parsedstate.alive, parsedstate.id], (error, results) => {
+        console.log('Status Updated')
+        const {id, state, alive} = state_data;
+        console.log('Device ID:')
+        console.log(id)
+        console.log('Status:')
+        console.log(state)
+        console.log('Alive: ')
+        console.log(alive)
+
+        connection.query(`UPDATE deviceStatus SET state = ?, alive = ? WHERE id = ?;`, [state, alive, id], (error, results) => {
             if (error) {
+                console.log('deviceStatus Update query error:');
                 console.log(error);
                 return;
             }
             console.log(results);
         });
+
         connection.query(`SELECT * FROM deviceStatus;`, function (error, results) {
             if (error) {
+                console.log('SELECT * FROM deviceStatus query error:');
                 console.log(error);
                 return;
             }
@@ -115,15 +82,16 @@ io.on('connection', socket => {
             application.emit('update', results)
         });
 
-        connection.query(`SELECT Token FROM PushAlert WHERE device_id = ? AND Expect_Status = ?;`, [parsedstate.id, parsedstate.state], function (error, results) {
+        connection.query(`SELECT Token FROM PushAlert WHERE device_id = ? AND Expect_Status = ?;`, [id, state], function (error, results) {
             let target_tokens = new Array();
             if (error) {
+                console.log('SELECT Token query error:');
                 console.log(error);
                 return;
             }
             console.log(results);
             console.log(results.length);
-            for (var i = 0; i < results.length; i++) {
+            for (let i = 0; i < results.length; i++) {
                 console.log(results[i].Token);
                 target_tokens[i]=results[i].Token;
                 console.log(target_tokens[i]);
@@ -135,7 +103,7 @@ io.on('connection', socket => {
             let message = {
                 notification: {
                     title: '세탁기/건조기 알림',
-                    body: `${parsedstate.id}번 세탁기/건조기의 동작이 완료되었습니다.`,
+                    body: `${id}번 세탁기/건조기의 동작이 완료되었습니다.`,
                 },
                 tokens: target_tokens,
                 android: {
@@ -165,8 +133,9 @@ io.on('connection', socket => {
             });
         });
 
-        connection.query(`DELETE FROM PushAlert WHERE device_id = ? AND Expect_Status = ?;`, [parsedstate.id, parsedstate.state], function (error, results) {
+        connection.query(`DELETE FROM PushAlert WHERE device_id = ? AND Expect_Status = ?;`, [id, state], function (error, results) {
             if (error) {
+                console.log('DELETE Token query error:');
                 console.log(error);
                 return;
             }
@@ -183,4 +152,48 @@ io.on('connection', socket => {
         io.emit('msg', test)
     })
 
+})
+
+//Socket.io-Application,Frontend
+
+application.on('connection', socket => {
+    console.log('Socket.IO Connected:', socket.id)
+
+    connection.query(`SELECT * FROM deviceStatus;`, function (error, results) {
+        if (error) {
+            console.log('SELECT * FROM deviceStatus query error:');
+            console.log(error);
+            return;
+        }
+        console.log(results);
+        application.emit('update', results)
+    });
+
+    socket.on('test', test => {
+        console.log('application')
+        console.log(test)
+        application.emit('msg', 'Halo')
+        application.emit('msg', test)
+    })
+
+    socket.on('request_push', push_data => {
+        console.log('Push Request Received')
+        const {token, device_id, expect_state} = push_data;
+        console.log('Device Token:')
+        console.log(token)
+        console.log('Device ID:')
+        console.log(device_id)
+        console.log('Expectd Status:')
+        console.log(expect_state)
+
+        connection.query(`INSERT INTO PushAlert (Token, device_id, Expect_Status) VALUES (?, ?, ?);`, [token, device_id, expect_state], (error, results) => {
+            if (error) {
+                console.log('deviceStatus Update query error:');
+                console.log(error);
+                return;
+            }
+            console.log(results);
+        });
+        //io.emit('msg', 'Halo')
+    })
 })
