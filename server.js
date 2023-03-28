@@ -63,6 +63,7 @@ io.on('connection', socket => {
         console.log('Alive: ')
         console.log(alive)
 
+        //Gateway에서 Socket.io로 넘어온 값 DB에 넣기
         connection.query(`UPDATE deviceStatus SET state = ?, alive = ? WHERE id = ?;`, [state, alive, id], (error, results) => {
             if (error) {
                 console.log('deviceStatus Update query error:');
@@ -72,6 +73,7 @@ io.on('connection', socket => {
             console.log(results);
         });
 
+        //Application과 Frontend에 현재 상태 DB 넘기기
         connection.query(`SELECT * FROM deviceStatus;`, function (error, results) {
             if (error) {
                 console.log('SELECT * FROM deviceStatus query error:');
@@ -82,6 +84,7 @@ io.on('connection', socket => {
             application.emit('update', results)
         });
 
+        //Gateway에서 Socket.io로 넘어온 값에 등록된 Token 조회해서 FCM 보내기
         connection.query(`SELECT Token FROM PushAlert WHERE device_id = ? AND Expect_Status = ?;`, [id, state], function (error, results) {
             let target_tokens = new Array();
             if (error) {
@@ -186,6 +189,18 @@ application.on('connection', socket => {
         console.log(device_id)
         console.log('Expectd Status:')
         console.log(expect_state)
+
+        connection.query(`SELECT Token FROM PushAlert WHERE device_id = ? AND Expect_Status = ?;`, [device_id, expect_state], function (error, results) {
+            if (error) {
+                console.log('SELECT Token query error:');
+                console.log(error);
+                return;
+            }
+            if (results.length > 0) {
+                console.log('This is a duplicate value');
+                return;
+            }
+        });
 
         connection.query(`INSERT INTO PushAlert (Token, device_id, Expect_Status) VALUES (?, ?, ?);`, [token, device_id, expect_state], (error, results) => {
             if (error) {
