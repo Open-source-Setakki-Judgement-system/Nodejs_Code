@@ -4,7 +4,31 @@
 <script>
   const socket = io('https://osj.pnxelec.com')
 
-  const deviceStatus = {
+  const deviceStatus_1 = {
+      id: '1',
+      state: '1',
+      alive: '1',
+  }
+
+  const deviceStatus_2 = {
+      id: '2',
+      state: '1',
+      alive: '1',
+  }
+
+  const deviceStatus_3 = {
+      id: '3',
+      state: '1',
+      alive: '1',
+  }
+
+  const deviceStatus_4 = {
+      id: '4',
+      state: '1',
+      alive: '1',
+  }
+
+  const deviceStatus_5 = {
       id: '5',
       state: '1',
       alive: '1',
@@ -29,15 +53,26 @@
 <body>
   <!-- <div>This is page of project "Lotura".</div>
   <meta http-equiv="refresh" content="0; url=https://github.com/Open-source-Setakki-Judgement-system"></meta> -->
-  <button onclick="YaHallo()">YaHallo</button>
+  <button onclick="button_1()">1</button>
+  <button onclick="button_2()">2</button>
+  <button onclick="button_3()">3</button>
+  <button onclick="button_4()">4</button>
+  <button onclick="button_5()">5</button>
   <script>
-    function YaHallo() {
-      // let json = {
-      //   "id":5,
-      //   "alive":1,
-      //   "state":1
-      // };
-      socket.emit('update_state', deviceStatus)
+    function button_1() {
+      socket.emit('update_state', deviceStatus_1)
+    }
+    function button_2() {
+      socket.emit('update_state', deviceStatus_2)
+    }
+    function button_3() {
+      socket.emit('update_state', deviceStatus_3)
+    }
+    function button_4() {
+      socket.emit('update_state', deviceStatus_4)
+    }
+    function button_5() {
+      socket.emit('update_state', deviceStatus_5)
     }
   </script>
 </body>
