@@ -198,6 +198,7 @@ application.on('connection', socket => {
             }
             if (results.length > 0) {
                 console.log('This is a duplicate value');
+                console.log('==============================================')
                 return;
             } else {
                 connection.query(`INSERT INTO PushAlert (Token, device_id, Expect_Status) VALUES (?, ?, ?);`, [token, device_id, expect_state], (error, results) => {
