@@ -188,7 +188,7 @@ application.on('connection', socket => {
         console.log(expect_state)
 
         //DB에 중복되는 값 있는지 확인
-        connection.query(`SELECT Token FROM PushAlert WHERE device_id = ? AND Expect_Status = ?;`, [device_id, expect_state], function (error, results) {
+        connection.query(`SELECT Token FROM PushAlert WHERE device_id = ? AND Expect_Status = ? AND Token = ?;`, [device_id, expect_state,token], function (error, results) {
             if (error) {
                 console.log('SELECT Token query error:');
                 console.log(error);
