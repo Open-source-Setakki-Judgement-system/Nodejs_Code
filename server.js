@@ -26,7 +26,7 @@ fcm.initializeApp({
     credential: fcm.credential.cert(serAccount),
 })
 
-var connection = mysql.createConnection({
+const connection = mysql.createConnection({
     host: dbsettings.host,
     user: dbsettings.user,
     password: dbsettings.pw,
@@ -49,7 +49,7 @@ app.get('/', (req, res) => {
 application.on('connection', socket => {
     console.log('connected', socket.id)
 
-    connection.query(`SELECT * FROM deviceStatus;`, function (error, results, fields) {
+    connection.query(`SELECT * FROM deviceStatus;`, function (error, results) {
         if (error) {
             console.log(error);
         }
@@ -71,7 +71,7 @@ application.on('connection', socket => {
         console.log(parsedpush.token)
         console.log(parsedpush.device_id)
         console.log(parsedpush.expect_state)
-        connection.query(`INSERT INTO PushAlert (Token, device_id, Expect_Status) VALUES ('${parsedpush.token}',${parsedpush.device_id},${parsedpush.expect_state});`, function (error, results, fields) {
+        connection.query(`INSERT INTO PushAlert (Token, device_id, Expect_Status) VALUES (?, ?, ?);`, [parsedpush.token, parsedpush.device_id, parsedpush.expect_state], (error, results) => {
             if (error) {
                 console.log(error);
             }
@@ -91,13 +91,13 @@ io.on('connection', socket => {
         console.log(parsedstate.id)
         console.log(parsedstate.state)
         console.log(parsedstate.alive)
-        connection.query(`UPDATE deviceStatus SET state = ${parsedstate.state}, alive = ${parsedstate.alive} WHERE id =${parsedstate.id};`, function (error, results, fields) {
+        connection.query(`UPDATE deviceStatus SET state = ?, alive = ? WHERE id = ?;`, [parsedstate.state, parsedstate.alive, parsedstate.id], (error, results) => {
             if (error) {
                 console.log(error);
             }
             console.log(results);
         });
-        connection.query(`SELECT * FROM deviceStatus;`, function (error, results, fields) {
+        connection.query(`SELECT * FROM deviceStatus;`, function (error, results) {
             if (error) {
                 console.log(error);
             }
