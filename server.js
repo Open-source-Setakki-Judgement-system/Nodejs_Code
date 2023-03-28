@@ -1,22 +1,28 @@
 const dbsettings = require('./var.js');
 const express = require('express')
 const cors = require('cors')
-var mysql = require('mysql');
+const mysql = require('mysql');
 const fcm = require('firebase-admin')
 const fs = require('fs');
+
 const app = express()
 app.use(cors())
+
 require('console-stamp')(console, 'yyyy/mm/dd HH:MM:ss.l');
+
 const options = {
     key: fs.readFileSync('./privkey.pem'),
     cert: fs.readFileSync('./cert.pem')
   };
+
 const https = require('https').createServer(options, app);
 const http = require('http').createServer(app)
 const io = require('socket.io')(https)
 const application = io.of('/application');
 const gateway = io.of('/gateway');
-let serAccount = require('./firebase_token.json')
+
+const serAccount = require('./firebase_token.json')
+
 const http_port = 80
 const https_port = 443
 
@@ -52,6 +58,7 @@ application.on('connection', socket => {
     connection.query(`SELECT * FROM deviceStatus;`, function (error, results) {
         if (error) {
             console.log(error);
+            return;
         }
         console.log(results);
         application.emit('update', results)
@@ -74,6 +81,7 @@ application.on('connection', socket => {
         connection.query(`INSERT INTO PushAlert (Token, device_id, Expect_Status) VALUES (?, ?, ?);`, [parsedpush.token, parsedpush.device_id, parsedpush.expect_state], (error, results) => {
             if (error) {
                 console.log(error);
+                return;
             }
             console.log(results);
         });
@@ -94,21 +102,24 @@ io.on('connection', socket => {
         connection.query(`UPDATE deviceStatus SET state = ?, alive = ? WHERE id = ?;`, [parsedstate.state, parsedstate.alive, parsedstate.id], (error, results) => {
             if (error) {
                 console.log(error);
+                return;
             }
             console.log(results);
         });
         connection.query(`SELECT * FROM deviceStatus;`, function (error, results) {
             if (error) {
                 console.log(error);
+                return;
             }
             console.log(results);
             application.emit('update', results)
         });
 
-        connection.query(`SELECT Token FROM PushAlert WHERE device_id = ${parsedstate.id} AND Expect_Status = ${parsedstate.state};`, function (error, results, fields) {
+        connection.query(`SELECT Token FROM PushAlert WHERE device_id = ? AND Expect_Status = ?;`, [parsedstate.id, parsedstate.state], function (error, results) {
             let target_tokens = new Array();
             if (error) {
                 console.log(error);
+                return;
             }
             console.log(results);
             console.log(results.length);
@@ -154,9 +165,10 @@ io.on('connection', socket => {
             });
         });
 
-        connection.query(`DELETE FROM PushAlert WHERE device_id = ${parsedstate.id} AND Expect_Status = ${parsedstate.state};`, function (error, results, fields) {
+        connection.query(`DELETE FROM PushAlert WHERE device_id = ? AND Expect_Status = ?;`, [parsedstate.id, parsedstate.state], function (error, results) {
             if (error) {
                 console.log(error);
+                return;
             }
             console.log(results);
         });
