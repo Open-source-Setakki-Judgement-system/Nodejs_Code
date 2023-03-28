@@ -13,7 +13,7 @@ require('console-stamp')(console, 'yyyy/mm/dd HH:MM:ss.l');
 const options = {
     key: fs.readFileSync('./privkey.pem'),
     cert: fs.readFileSync('./cert.pem')
-  };
+};
 
 const https = require('https').createServer(options, app);
 const http = require('http').createServer(app)
@@ -55,7 +55,7 @@ io.on('connection', socket => {
 
     socket.on('update_state', state_data => {
         console.log('Status Updated')
-        const {id, state, alive} = state_data;
+        const { id, state, alive } = state_data;
         console.log('Device ID:')
         console.log(id)
         console.log('Status:')
@@ -96,11 +96,11 @@ io.on('connection', socket => {
             console.log(results.length);
             for (let i = 0; i < results.length; i++) {
                 console.log(results[i].Token);
-                target_tokens[i]=results[i].Token;
+                target_tokens[i] = results[i].Token;
                 console.log(target_tokens[i]);
             }
             console.log(target_tokens);
-            if(target_tokens == 0){
+            if (target_tokens == 0) {
                 return
             }
             let message = {
@@ -121,19 +121,19 @@ io.on('connection', socket => {
                 }
             }
             fcm.messaging().sendMulticast(message)
-            .then((response) => {
-                if (response.failureCount > 0) {
-                    const failedTokens = [];
-                    response.responses.forEach((resp, idx) => {
-                        if (!resp.success) {
-                            failedTokens.push(target_tokens[idx]);
-                        }
-                    });
-                    console.log('List of tokens that caused failures: ' + failedTokens);
-                }
-                console.log('success')
-                return
-            });
+                .then((response) => {
+                    if (response.failureCount > 0) {
+                        const failedTokens = [];
+                        response.responses.forEach((resp, idx) => {
+                            if (!resp.success) {
+                                failedTokens.push(target_tokens[idx]);
+                            }
+                        });
+                        console.log('List of tokens that caused failures: ' + failedTokens);
+                    }
+                    console.log('success')
+                    return
+                });
         });
 
         connection.query(`DELETE FROM PushAlert WHERE device_id = ? AND Expect_Status = ?;`, [id, state], function (error, results) {
@@ -172,7 +172,7 @@ application.on('connection', socket => {
         application.emit('update', results)
         console.log('==============================================')
     });
-    
+
     socket.on('test', test => {
         console.log('application')
         console.log(test)
@@ -182,7 +182,7 @@ application.on('connection', socket => {
 
     socket.on('request_push', push_data => {
         console.log('Push Request Received')
-        const {token, device_id, expect_state} = push_data;
+        const { token, device_id, expect_state } = push_data;
         console.log('Device Token:')
         console.log(token)
         console.log('Device ID:')
@@ -199,18 +199,18 @@ application.on('connection', socket => {
             if (results.length > 0) {
                 console.log('This is a duplicate value');
                 return;
+            } else {
+                connection.query(`INSERT INTO PushAlert (Token, device_id, Expect_Status) VALUES (?, ?, ?);`, [token, device_id, expect_state], (error, results) => {
+                    if (error) {
+                        console.log('deviceStatus Update query error:');
+                        console.log(error);
+                        return;
+                    }
+                    console.log(results);
+                    console.log('Push Request Success')
+                    console.log('==============================================')
+                });
             }
-        });
-
-        connection.query(`INSERT INTO PushAlert (Token, device_id, Expect_Status) VALUES (?, ?, ?);`, [token, device_id, expect_state], (error, results) => {
-            if (error) {
-                console.log('deviceStatus Update query error:');
-                console.log(error);
-                return;
-            }
-            console.log(results);
-            console.log('Push Request Success')
-            console.log('==============================================')
         });
         //io.emit('msg', 'Halo')
     })
