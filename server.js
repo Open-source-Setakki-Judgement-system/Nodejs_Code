@@ -53,6 +53,7 @@ app.get('/', (req, res) => {
 io.on('connection', socket => {
     console.log('Socket.IO Connected:', socket.id)
 
+    //Gateway에서 update_state 받으면
     socket.on('update_state', state_data => {
         console.log('Status Updated')
         const { id, state, alive } = state_data;
@@ -94,15 +95,21 @@ io.on('connection', socket => {
             }
             console.log(results);
             console.log(results.length);
+
+            //해당되는 Token 배열형태로 저장
             for (let i = 0; i < results.length; i++) {
                 console.log(results[i].Token);
                 target_tokens[i] = results[i].Token;
                 console.log(target_tokens[i]);
             }
             console.log(target_tokens);
+
+            //해당되는 Token이 없다면 return
             if (target_tokens == 0) {
                 return
             }
+
+            //FCM 메시지 내용
             let message = {
                 notification: {
                     title: '세탁기/건조기 알림',
@@ -120,6 +127,8 @@ io.on('connection', socket => {
                     }
                 }
             }
+
+            //FCM 메시지 보내기
             fcm.messaging().sendMulticast(message)
                 .then((response) => {
                     if (response.failureCount > 0) {
@@ -136,6 +145,7 @@ io.on('connection', socket => {
                 });
         });
 
+        //FCM 메시지 보낸 Token 제거
         connection.query(`DELETE FROM PushAlert WHERE device_id = ? AND Expect_Status = ?;`, [id, state], function (error, results) {
             if (error) {
                 console.log('DELETE Token query error:');
@@ -145,14 +155,6 @@ io.on('connection', socket => {
             console.log(results);
         });
 
-        //io.emit('msg', 'Halo')
-    })
-
-    socket.on('test', test => {
-        console.log('gateway')
-        console.log(test)
-        io.emit('msg', 'Halo')
-        io.emit('msg', test)
     })
 
 })
@@ -162,6 +164,7 @@ io.on('connection', socket => {
 application.on('connection', socket => {
     console.log('Socket.IO Connected:', socket.id)
 
+    //Application과 Frontend에 현재 상태 DB 넘기기
     connection.query(`SELECT * FROM deviceStatus;`, function (error, results) {
         if (error) {
             console.log('SELECT * FROM deviceStatus query error:');
@@ -173,13 +176,7 @@ application.on('connection', socket => {
         console.log('==============================================')
     });
 
-    socket.on('test', test => {
-        console.log('application')
-        console.log(test)
-        application.emit('msg', 'Halo')
-        application.emit('msg', test)
-    })
-
+    //Application에서 request_push 받으면
     socket.on('request_push', push_data => {
         console.log('Push Request Received')
         const { token, device_id, expect_state } = push_data;
@@ -190,17 +187,20 @@ application.on('connection', socket => {
         console.log('Expectd Status:')
         console.log(expect_state)
 
+        //DB에 중복되는 값 있는지 확인
         connection.query(`SELECT Token FROM PushAlert WHERE device_id = ? AND Expect_Status = ?;`, [device_id, expect_state], function (error, results) {
             if (error) {
                 console.log('SELECT Token query error:');
                 console.log(error);
                 return;
             }
+
+            //중복이면 return
             if (results.length > 0) {
                 console.log('This is a duplicate value');
                 console.log('==============================================')
                 return;
-            } else {
+            } else {//중복 아니면 DB에 Token 등록
                 connection.query(`INSERT INTO PushAlert (Token, device_id, Expect_Status) VALUES (?, ?, ?);`, [token, device_id, expect_state], (error, results) => {
                     if (error) {
                         console.log('deviceStatus Update query error:');
@@ -213,6 +213,5 @@ application.on('connection', socket => {
                 });
             }
         });
-        //io.emit('msg', 'Halo')
     })
 })
