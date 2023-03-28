@@ -167,8 +167,9 @@ application.on('connection', socket => {
         }
         console.log(results);
         application.emit('update', results)
+        console.log('==============================================')
     });
-
+    
     socket.on('test', test => {
         console.log('application')
         console.log(test)
@@ -193,6 +194,8 @@ application.on('connection', socket => {
                 return;
             }
             console.log(results);
+            console.log('Push Request Success')
+            console.log('==============================================')
         });
         //io.emit('msg', 'Halo')
     })
