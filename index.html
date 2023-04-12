@@ -4,32 +4,8 @@
 <script>
   const socket = io('https://osj.pnxelec.com')
 
-  const deviceStatus_1 = {
+  const deviceStatus = {
       id: '1',
-      state: '1',
-      alive: '1',
-  }
-
-  const deviceStatus_2 = {
-      id: '2',
-      state: '1',
-      alive: '1',
-  }
-
-  const deviceStatus_3 = {
-      id: '3',
-      state: '1',
-      alive: '1',
-  }
-
-  const deviceStatus_4 = {
-      id: '4',
-      state: '1',
-      alive: '1',
-  }
-
-  const deviceStatus_5 = {
-      id: '5',
       state: '1',
       alive: '1',
   }
@@ -60,20 +36,24 @@
   <button onclick="button_5()">5</button>
   <script>
     function button_1() {
-      deviceStatus_1['id'] = 6;
-      socket.emit('update_state', deviceStatus_1)
+      deviceStatus['id'] = 1;
+      socket.emit('update_state', deviceStatus)
     }
     function button_2() {
-      socket.emit('update_state', deviceStatus_2)
+      deviceStatus['id'] = 2;
+      socket.emit('update_state', deviceStatus)
     }
     function button_3() {
-      socket.emit('update_state', deviceStatus_3)
+      deviceStatus['id'] = 3;
+      socket.emit('update_state', deviceStatus)
     }
     function button_4() {
-      socket.emit('update_state', deviceStatus_4)
+      deviceStatus['id'] = 4;
+      socket.emit('update_state', deviceStatus)
     }
     function button_5() {
-      socket.emit('update_state', deviceStatus_5)
+      deviceStatus['id'] = 5;
+      socket.emit('update_state', deviceStatus)
     }
   </script>
 </body>
