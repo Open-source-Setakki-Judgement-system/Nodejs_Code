@@ -60,6 +60,7 @@
   <button onclick="button_5()">5</button>
   <script>
     function button_1() {
+      deviceStatus_1['id'] = 6;
       socket.emit('update_state', deviceStatus_1)
     }
     function button_2() {
