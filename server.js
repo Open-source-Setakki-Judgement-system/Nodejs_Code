@@ -228,6 +228,7 @@ application.on('connection', socket => {
                 return;
             }
             socket.emit('request_list',results);
+            console.log(results);
         });
     })
     //Application에서 푸시 신청 제거하면
