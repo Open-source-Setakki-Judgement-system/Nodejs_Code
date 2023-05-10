@@ -214,4 +214,38 @@ application.on('connection', socket => {
             }
         });
     })
+    //Application에서 푸시 신청 목록 보기 누르면
+    socket.on('view_request', view_requset_data => {
+        console.log('Push Request List Received')
+        const { token } = view_requset_data;
+        console.log('Device Token:')
+        console.log(token)
+
+        connection.query(`SELECT device_id FROM PushAlert WHERE Token = ?;`, [token], function (error, results) {
+            if (error) {
+                console.log('SELECT Token query error:');
+                console.log(error);
+                return;
+            }
+            socket.emit('request_list',results);
+        });
+    })
+    //Application에서 푸시 신청 제거하면
+    socket.on('remove_request', remove_request_data => {
+        console.log('Push Request remove Received')
+        const { token,device_id } = remove_request_data;
+        console.log('Device Token:')
+        console.log(token)
+        console.log('Device ID:')
+        console.log(device_id)
+
+        connection.query(`DELETE FROM PushAlert WHERE device_id = ? AND Token = ?;`, [device_id,token], function (error, results) {
+            if (error) {
+                console.log('SELECT Token query error:');
+                console.log(error);
+                return;
+            }
+            console.log(results);
+        });
+    })
 })
