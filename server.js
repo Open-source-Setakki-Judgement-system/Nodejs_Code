@@ -221,7 +221,7 @@ application.on('connection', socket => {
         console.log('Device Token:')
         console.log(token)
 
-        connection.query(`SELECT device_id FROM PushAlert WHERE Token = ?;`, [token], function (error, results) {
+        connection.query(`SELECT device_id FROM PushAlert WHERE Token = ? ORDER BY device_id;`, [token], function (error, results) {
             if (error) {
                 console.log('SELECT Token query error:');
                 console.log(error);
