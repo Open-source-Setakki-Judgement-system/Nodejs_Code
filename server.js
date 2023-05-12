@@ -202,17 +202,17 @@ application.on('connection', socket => {
                 console.log('==============================================')
                 return;
             } else {//중복 아니면 DB에 Token 등록
-                connection.query(`SELECT device_type FROM deviceStatus WHERE id = ?;`, [device_id], function (error, results) {
-                    if (error) {
-                        console.log('SELECT device_type query error:');
-                        console.log(error);
-                        return;
-                    }
+                // connection.query(`SELECT device_type FROM deviceStatus WHERE id = ?;`, [device_id], function (error, results) {
+                //     if (error) {
+                //         console.log('SELECT device_type query error:');
+                //         console.log(error);
+                //         return;
+                //     }
                     
-                    device_type = results.device_type;
-                    console.log(device_type);
-                });
-                connection.query(`INSERT INTO PushAlert (Token, device_id, Expect_Status, device_type ) VALUES (?, ?, ?);`, [token, device_id, expect_state, device_type], (error, results) => {
+                //     device_type = results.device_type;
+                //     console.log(device_type);
+                // });
+                connection.query(`INSERT INTO PushAlert (Token, device_id, Expect_Status) VALUES (?, ?, ?);`, [token, device_id, expect_state], (error, results) => {
                     if (error) {
                         console.log('deviceStatus Update query error:');
                         console.log(error);
