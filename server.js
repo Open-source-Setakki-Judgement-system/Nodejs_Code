@@ -209,7 +209,7 @@ application.on('connection', socket => {
                         return;
                     }
                     console.log(results);
-                    device_type = results
+                    device_type = results[0].device_type;
                 });
                 connection.query(`INSERT INTO PushAlert (Token, device_id, Expect_Status, device_type ) VALUES (?, ?, ?);`, [token, device_id, expect_state, device_type], (error, results) => {
                     if (error) {
