@@ -212,7 +212,7 @@ application.on('connection', socket => {
                     type = results[0].device_type;
                     console.log(type);
                 });
-                connection.query(`INSERT INTO PushAlert (Token, device_id, Expect_Status) VALUES (?, ?, ?);`, [token, device_id, expect_state], (error, results) => {
+                connection.query(`INSERT INTO PushAlert (Token, device_id, Expect_Status, device_type) VALUES (?, ?, ?, ?);`, [token, device_id, expect_state, type], (error, results) => {
                     if (error) {
                         console.log('deviceStatus Update query error:');
                         console.log(error);
