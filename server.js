@@ -202,7 +202,7 @@ application.on('connection', socket => {
                 console.log('==============================================')
                 return;
             } else {//중복 아니면 DB에 Token 등록
-                let type
+                const type = 0
                 connection.query(`SELECT device_type FROM deviceStatus WHERE id = ?;`, [device_id], function (error, results) {
                     if (error) {
                         console.log('SELECT device_type query error:');
