@@ -203,25 +203,25 @@ application.on('connection', socket => {
                 console.log('==============================================')
                 return;
             } else {//중복 아니면 DB에 Token 등록
-                connection.query(`SELECT device_type FROM deviceStatus WHERE id = ?;`, [device_id], function (error, results) {
+                connection.query(`SELECT device_type FROM deviceStatus WHERE id = ?;`, [device_id], function (error, type_results) {
                     if (error) {
                         console.log('SELECT device_type query error:');
                         console.log(error);
                         return;
                     }
-                    type[0] = results[0].device_type;
-                    console.log(type);
+                    
+                    connection.query(`INSERT INTO PushAlert (Token, device_id, Expect_Status, device_type) VALUES (?, ?, ?, ?);`, [token, device_id, expect_state, type_results[0].device_type], (error, results) => {
+                        if (error) {
+                            console.log('deviceStatus Update query error:');
+                            console.log(error);
+                            return;
+                        }
+                        console.log(results);
+                        console.log('Push Request Success')
+                        console.log('==============================================')
+                    });
                 });
-                connection.query(`INSERT INTO PushAlert (Token, device_id, Expect_Status, device_type) VALUES (?, ?, ?, ?);`, [token, device_id, expect_state, type[0]], (error, results) => {
-                    if (error) {
-                        console.log('deviceStatus Update query error:');
-                        console.log(error);
-                        return;
-                    }
-                    console.log(results);
-                    console.log('Push Request Success')
-                    console.log('==============================================')
-                });
+                
             }
         });
     })
