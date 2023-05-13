@@ -190,6 +190,7 @@ application.on('connection', socket => {
 
         //DB에 중복되는 값 있는지 확인
         connection.query(`SELECT Token FROM PushAlert WHERE device_id = ? AND Expect_Status = ? AND Token = ?;`, [device_id, expect_state,token], function (error, results) {
+            let type = new Array();
             if (error) {
                 console.log('SELECT Token query error:');
                 console.log(error);
@@ -202,17 +203,16 @@ application.on('connection', socket => {
                 console.log('==============================================')
                 return;
             } else {//중복 아니면 DB에 Token 등록
-                const type = 0
                 connection.query(`SELECT device_type FROM deviceStatus WHERE id = ?;`, [device_id], function (error, results) {
                     if (error) {
                         console.log('SELECT device_type query error:');
                         console.log(error);
                         return;
                     }
-                    type = results[0].device_type;
+                    type[0] = results[0].device_type;
                     console.log(type);
                 });
-                connection.query(`INSERT INTO PushAlert (Token, device_id, Expect_Status, device_type) VALUES (?, ?, ?, ?);`, [token, device_id, expect_state, type], (error, results) => {
+                connection.query(`INSERT INTO PushAlert (Token, device_id, Expect_Status, device_type) VALUES (?, ?, ?, ?);`, [token, device_id, expect_state, type[0]], (error, results) => {
                     if (error) {
                         console.log('deviceStatus Update query error:');
                         console.log(error);
