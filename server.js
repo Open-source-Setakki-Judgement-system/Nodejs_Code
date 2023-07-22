@@ -61,11 +61,9 @@ io.on('connection', socket => {
         console.log(id)
         console.log('Status:')
         console.log(state)
-        console.log('Alive: ')
-        console.log(alive)
 
         //Gateway에서 Socket.io로 넘어온 값 DB에 넣기
-        connection.query(`UPDATE deviceStatus SET state = ?, alive = ? WHERE id = ?;`, [state, alive, id], (error, results) => {
+        connection.query(`UPDATE deviceStatus SET state = ? WHERE id = ?;`, [state, id], (error, results) => {
             if (error) {
                 console.log('deviceStatus Update query error:');
                 console.log(error);
