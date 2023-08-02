@@ -107,7 +107,7 @@ io.on('connection', socket => {
                 return
             }
             connection.query(`SELECT device_type FROM deviceStatus WHERE id = ?;`, [id], function (error, results) {
-                if (results[0].device_type == WASH) {
+                if (results[0].device_type == "WASH") {
                     //FCM 메시지 내용
                     let message = {
                         notification: {
@@ -142,7 +142,7 @@ io.on('connection', socket => {
                             console.log('success')
                             return
                         });
-                } else if (results[0].device_type == DRY) {
+                } else if (results[0].device_type == "DRY") {
                     //FCM 메시지 내용
                     let message = {
                         notification: {
