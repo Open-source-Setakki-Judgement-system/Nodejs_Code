@@ -106,41 +106,80 @@ io.on('connection', socket => {
             if (target_tokens == 0) {
                 return
             }
-
-            //FCM 메시지 내용
-            let message = {
-                notification: {
-                    title: '세탁기/건조기 알림',
-                    body: `${id}번 세탁기/건조기의 동작이 완료되었습니다.`,
-                },
-                tokens: target_tokens,
-                android: {
-                    priority: "high"
-                },
-                apns: {
-                    payload: {
-                        aps: {
-                            contentAvailable: true,
+            connection.query(`SELECT device_type FROM deviceStatus WHERE id = ?;`, [id], function (error, results) {
+                if (result[0].device_type == WASH) {
+                    //FCM 메시지 내용
+                    let message = {
+                        notification: {
+                            title: '세탁기 알림',
+                            body: `${id}번 세탁기의 동작이 완료되었습니다.`,
+                        },
+                        tokens: target_tokens,
+                        android: {
+                            priority: "high"
+                        },
+                        apns: {
+                            payload: {
+                                aps: {
+                                    contentAvailable: true,
+                                }
+                            }
                         }
                     }
-                }
-            }
 
-            //FCM 메시지 보내기
-            fcm.messaging().sendMulticast(message)
-                .then((response) => {
-                    if (response.failureCount > 0) {
-                        const failedTokens = [];
-                        response.responses.forEach((resp, idx) => {
-                            if (!resp.success) {
-                                failedTokens.push(target_tokens[idx]);
+                    //FCM 메시지 보내기
+                    fcm.messaging().sendMulticast(message)
+                        .then((response) => {
+                            if (response.failureCount > 0) {
+                                const failedTokens = [];
+                                response.responses.forEach((resp, idx) => {
+                                    if (!resp.success) {
+                                        failedTokens.push(target_tokens[idx]);
+                                    }
+                                });
+                                console.log('List of tokens that caused failures: ' + failedTokens);
                             }
+                            console.log('success')
+                            return
                         });
-                        console.log('List of tokens that caused failures: ' + failedTokens);
+                } else if (result[0].device_type == DRY) {
+                    //FCM 메시지 내용
+                    let message = {
+                        notification: {
+                            title: '건조기 알림',
+                            body: `${id}번 건조기의 동작이 완료되었습니다.`,
+                        },
+                        tokens: target_tokens,
+                        android: {
+                            priority: "high"
+                        },
+                        apns: {
+                            payload: {
+                                aps: {
+                                    contentAvailable: true,
+                                }
+                            }
+                        }
                     }
-                    console.log('success')
-                    return
-                });
+
+                    //FCM 메시지 보내기
+                    fcm.messaging().sendMulticast(message)
+                        .then((response) => {
+                            if (response.failureCount > 0) {
+                                const failedTokens = [];
+                                response.responses.forEach((resp, idx) => {
+                                    if (!resp.success) {
+                                        failedTokens.push(target_tokens[idx]);
+                                    }
+                                });
+                                console.log('List of tokens that caused failures: ' + failedTokens);
+                            }
+                            console.log('success')
+                            return
+                        });
+
+                }
+            });
         });
 
         //FCM 메시지 보낸 Token 제거
@@ -187,7 +226,7 @@ application.on('connection', socket => {
         const device_type = ""
 
         //DB에 중복되는 값 있는지 확인
-        connection.query(`SELECT Token FROM PushAlert WHERE device_id = ? AND Expect_Status = ? AND Token = ?;`, [device_id, expect_state,token], function (error, results) {
+        connection.query(`SELECT Token FROM PushAlert WHERE device_id = ? AND Expect_Status = ? AND Token = ?;`, [device_id, expect_state, token], function (error, results) {
             let type = new Array();
             if (error) {
                 console.log('SELECT Token query error:');
@@ -207,7 +246,7 @@ application.on('connection', socket => {
                         console.log(error);
                         return;
                     }
-                    
+
                     connection.query(`INSERT INTO PushAlert (Token, device_id, Expect_Status, device_type) VALUES (?, ?, ?, ?);`, [token, device_id, expect_state, type_results[0].device_type], (error, results) => {
                         if (error) {
                             console.log('deviceStatus Update query error:');
@@ -219,7 +258,7 @@ application.on('connection', socket => {
                         console.log('==============================================')
                     });
                 });
-                
+
             }
         });
     })
@@ -236,20 +275,20 @@ application.on('connection', socket => {
                 console.log(error);
                 return;
             }
-            socket.emit('request_list',results);
+            socket.emit('request_list', results);
             console.log(results);
         });
     })
     //Application에서 푸시 신청 제거하면
     socket.on('remove_request', remove_request_data => {
         console.log('Push Request remove Received')
-        const { token,device_id } = remove_request_data;
+        const { token, device_id } = remove_request_data;
         console.log('Device Token:')
         console.log(token)
         console.log('Device ID:')
         console.log(device_id)
 
-        connection.query(`DELETE FROM PushAlert WHERE device_id = ? AND Token = ?;`, [device_id,token], function (error, results) {
+        connection.query(`DELETE FROM PushAlert WHERE device_id = ? AND Token = ?;`, [device_id, token], function (error, results) {
             if (error) {
                 console.log('SELECT Token query error:');
                 console.log(error);
@@ -264,7 +303,7 @@ application.on('connection', socket => {
                 console.log(error);
                 return;
             }
-            socket.emit('request_list',results);
+            socket.emit('request_list', results);
             console.log(results);
         });
     })
