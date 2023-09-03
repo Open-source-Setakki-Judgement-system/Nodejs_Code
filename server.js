@@ -145,6 +145,7 @@ io.on('connection', socket => {
                     }
                     let hour_diff = moment(results[0].OFF_time).diff(results[0].ON_time, 'hours')
                     let minute_diff = moment(results[0].OFF_time).diff(results[0].ON_time, 'minutes')
+                    let second_diff = moment(results[0].OFF_time).diff(results[0].ON_time, 'seconds')
                     console.log(hour_diff);
                     console.log(minute_diff);
                     connection.query(`SELECT device_type FROM deviceStatus WHERE id = ?;`, [id], function (error, results) {
@@ -153,7 +154,7 @@ io.on('connection', socket => {
                             let message = {
                                 notification: {
                                     title: '세탁기 알림',
-                                    body: `${id}번 세탁기의 동작이 완료되었습니다.\r\n동작시간 : ${hour_diff}시간 ${minute_diff}분`,
+                                    body: `${id}번 세탁기의 동작이 완료되었습니다.\r\n동작시간 : ${hour_diff}시간 ${minute_diff}분 ${second_diff}초`,
                                 },
                                 tokens: target_tokens,
                                 android: {
@@ -188,7 +189,7 @@ io.on('connection', socket => {
                             let message = {
                                 notification: {
                                     title: '건조기 알림',
-                                    body: `${id}번 건조기의 동작이 완료되었습니다.\r\n동작시간 : ${hour_diff}시간 ${minute_diff}분`,
+                                    body: `${id}번 건조기의 동작이 완료되었습니다.\r\n동작시간 : ${hour_diff}시간 ${minute_diff}분 ${second_diff}초`,
                                 },
                                 tokens: target_tokens,
                                 android: {
