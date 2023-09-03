@@ -72,6 +72,15 @@ io.on('connection', socket => {
             console.log(results);
         });
 
+        connection.query(`UPDATE PushAlert SET state = ? WHERE device_id = ?;`, [state, id], (error, results) => {
+            if (error) {
+                console.log('deviceStatus Update query error:');
+                console.log(error);
+                return;
+            }
+            console.log(results);
+        });
+        
         //Application과 Frontend에 현재 상태 DB 넘기기
         connection.query(`SELECT * FROM deviceStatus;`, function (error, results) {
             if (error) {
