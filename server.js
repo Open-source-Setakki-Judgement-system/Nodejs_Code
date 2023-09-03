@@ -143,7 +143,7 @@ io.on('connection', socket => {
                         console.log(error);
                         return;
                     }
-                    let time_diff = moment(results[0].ON_time).diff(results[0].OFF_time)
+                    let time_diff = moment(results[0].OFF_time).diff(results[0].ON_time)
                     console.log(time_diff);
                     let hour_diff = time_diff / 60;
                     let minute_diff = time_diff % 60;
