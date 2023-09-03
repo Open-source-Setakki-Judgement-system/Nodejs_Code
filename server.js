@@ -144,8 +144,8 @@ io.on('connection', socket => {
                         return;
                     }
                     let hour_diff = moment(results[0].OFF_time).diff(results[0].ON_time, 'hours')
-                    let minute_diff = moment(results[0].OFF_time).diff(results[0].ON_time, 'minutes')
-                    let second_diff = moment(results[0].OFF_time).diff(results[0].ON_time, 'seconds')
+                    let minute_diff = moment(results[0].OFF_time).diff(results[0].ON_time, 'minutes') - (hour_diff*60)
+                    let second_diff = moment(results[0].OFF_time).diff(results[0].ON_time, 'seconds') - (minute_diff*60) - (hour_diff*3600)
                     console.log(hour_diff);
                     console.log(minute_diff);
                     connection.query(`SELECT device_type FROM deviceStatus WHERE id = ?;`, [id], function (error, results) {
