@@ -75,7 +75,7 @@ io.on('connection', socket => {
 
         if(state == 0)//ON
         {
-            connection.query(`UPDATE deviceStatus SET ON_time = ? WHERE id = ?;`, [moment(), id], (error, results) => {
+            connection.query(`UPDATE deviceStatus SET ON_time = ? WHERE id = ?;`, [moment().format(), id], (error, results) => {
                 if (error) {
                     console.log('deviceStatus Update query error:');
                     console.log(error);
@@ -84,7 +84,7 @@ io.on('connection', socket => {
                 console.log(results);
             });
         }else{//OFF
-            connection.query(`UPDATE deviceStatus SET OFF_time = ? WHERE id = ?;`, [moment(), id], (error, results) => {
+            connection.query(`UPDATE deviceStatus SET OFF_time = ? WHERE id = ?;`, [moment().format(), id], (error, results) => {
                 if (error) {
                     console.log('deviceStatus Update query error:');
                     console.log(error);
