@@ -4,6 +4,7 @@ const cors = require('cors')
 const mysql = require('mysql');
 const fcm = require('firebase-admin')
 const fs = require('fs');
+const moment = require("moment");
 
 const app = express()
 app.use(cors())
@@ -72,6 +73,27 @@ io.on('connection', socket => {
             console.log(results);
         });
 
+        if(state == 0)//ON
+        {
+            connection.query(`UPDATE deviceStatus SET ON_time = ? WHERE id = ?;`, [moment(), id], (error, results) => {
+                if (error) {
+                    console.log('deviceStatus Update query error:');
+                    console.log(error);
+                    return;
+                }
+                console.log(results);
+            });
+        }else{//OFF
+            connection.query(`UPDATE deviceStatus SET OFF_time = ? WHERE id = ?;`, [moment(), id], (error, results) => {
+                if (error) {
+                    console.log('deviceStatus Update query error:');
+                    console.log(error);
+                    return;
+                }
+                console.log(results);
+            });
+        }
+
         connection.query(`UPDATE PushAlert SET state = ? WHERE device_id = ?;`, [state, id], (error, results) => {
             if (error) {
                 console.log('deviceStatus Update query error:');
@@ -114,81 +136,93 @@ io.on('connection', socket => {
             //해당되는 Token이 없다면 return
             if (target_tokens == 0) {
                 return
+            }else{
+                connection.query(`SELECT ON_time, OFF_time FROM deviceStatus WHERE id = ?;`, [id], function (error, results) {
+                    if (error) {
+                        console.log('SELECT Token query error:');
+                        console.log(error);
+                        return;
+                    }
+                    let time_diff = moment(results[0].ON_time).diff(results[0].OFF_time)
+                    console.log(time_diff);
+                    let hour_diff = time_diff / 60;
+                    let minute_diff = time_diff % 60;
+                    connection.query(`SELECT device_type FROM deviceStatus WHERE id = ?;`, [id], function (error, results) {
+                        if (results[0].device_type == "WASH") {
+                            //FCM 메시지 내용
+                            let message = {
+                                notification: {
+                                    title: '세탁기 알림',
+                                    body: `${id}번 세탁기의 동작이 완료되었습니다.\r\n동작시간:${hour_diff}시간 ${minute_diff}분`,
+                                },
+                                tokens: target_tokens,
+                                android: {
+                                    priority: "high"
+                                },
+                                apns: {
+                                    payload: {
+                                        aps: {
+                                            contentAvailable: true,
+                                        }
+                                    }
+                                }
+                            }
+        
+                            //FCM 메시지 보내기
+                            fcm.messaging().sendMulticast(message)
+                                .then((response) => {
+                                    if (response.failureCount > 0) {
+                                        const failedTokens = [];
+                                        response.responses.forEach((resp, idx) => {
+                                            if (!resp.success) {
+                                                failedTokens.push(target_tokens[idx]);
+                                            }
+                                        });
+                                        console.log('List of tokens that caused failures: ' + failedTokens);
+                                    }
+                                    console.log('success')
+                                    return
+                                });
+                        } else if (results[0].device_type == "DRY") {
+                            //FCM 메시지 내용
+                            let message = {
+                                notification: {
+                                    title: '건조기 알림',
+                                    body: `${id}번 건조기의 동작이 완료되었습니다.`,
+                                },
+                                tokens: target_tokens,
+                                android: {
+                                    priority: "high"
+                                },
+                                apns: {
+                                    payload: {
+                                        aps: {
+                                            contentAvailable: true,
+                                        }
+                                    }
+                                }
+                            }
+        
+                            //FCM 메시지 보내기
+                            fcm.messaging().sendMulticast(message)
+                                .then((response) => {
+                                    if (response.failureCount > 0) {
+                                        const failedTokens = [];
+                                        response.responses.forEach((resp, idx) => {
+                                            if (!resp.success) {
+                                                failedTokens.push(target_tokens[idx]);
+                                            }
+                                        });
+                                        console.log('List of tokens that caused failures: ' + failedTokens);
+                                    }
+                                    console.log('success')
+                                    return
+                                });
+        
+                        }
+                    });
+                });
             }
-            connection.query(`SELECT device_type FROM deviceStatus WHERE id = ?;`, [id], function (error, results) {
-                if (results[0].device_type == "WASH") {
-                    //FCM 메시지 내용
-                    let message = {
-                        notification: {
-                            title: '세탁기 알림',
-                            body: `${id}번 세탁기의 동작이 완료되었습니다.`,
-                        },
-                        tokens: target_tokens,
-                        android: {
-                            priority: "high"
-                        },
-                        apns: {
-                            payload: {
-                                aps: {
-                                    contentAvailable: true,
-                                }
-                            }
-                        }
-                    }
-
-                    //FCM 메시지 보내기
-                    fcm.messaging().sendMulticast(message)
-                        .then((response) => {
-                            if (response.failureCount > 0) {
-                                const failedTokens = [];
-                                response.responses.forEach((resp, idx) => {
-                                    if (!resp.success) {
-                                        failedTokens.push(target_tokens[idx]);
-                                    }
-                                });
-                                console.log('List of tokens that caused failures: ' + failedTokens);
-                            }
-                            console.log('success')
-                            return
-                        });
-                } else if (results[0].device_type == "DRY") {
-                    //FCM 메시지 내용
-                    let message = {
-                        notification: {
-                            title: '건조기 알림',
-                            body: `${id}번 건조기의 동작이 완료되었습니다.`,
-                        },
-                        tokens: target_tokens,
-                        android: {
-                            priority: "high"
-                        },
-                        apns: {
-                            payload: {
-                                aps: {
-                                    contentAvailable: true,
-                                }
-                            }
-                        }
-                    }
-
-                    //FCM 메시지 보내기
-                    fcm.messaging().sendMulticast(message)
-                        .then((response) => {
-                            if (response.failureCount > 0) {
-                                const failedTokens = [];
-                                response.responses.forEach((resp, idx) => {
-                                    if (!resp.success) {
-                                        failedTokens.push(target_tokens[idx]);
-                                    }
-                                });
-                                console.log('List of tokens that caused failures: ' + failedTokens);
-                            }
-                            console.log('success')
-                            return
-                        });
-
-                }
-            });
         });
 
         //FCM 메시지 보낸 Token 제거
