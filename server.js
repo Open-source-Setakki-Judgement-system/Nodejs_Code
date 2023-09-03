@@ -143,10 +143,10 @@ io.on('connection', socket => {
                         console.log(error);
                         return;
                     }
-                    let time_diff = moment(results[0].OFF_time).diff(results[0].ON_time)
-                    console.log(time_diff);
-                    let hour_diff = time_diff / 60;
-                    let minute_diff = time_diff % 60;
+                    let hour_diff = moment(results[0].ON_time).diff(results[0].OFF_time, 'hours')
+                    let minute_diff = moment(results[0].ON_time).diff(results[0].OFF_time, 'minutes')
+                    console.log(hour_diff);
+                    console.log(minute_diff);
                     connection.query(`SELECT device_type FROM deviceStatus WHERE id = ?;`, [id], function (error, results) {
                         if (results[0].device_type == "WASH") {
                             //FCM 메시지 내용
