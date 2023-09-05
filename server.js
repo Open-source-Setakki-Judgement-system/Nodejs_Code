@@ -70,7 +70,7 @@ io.on('connection', socket => {
                 console.log(error);
                 return;
             }
-            console.log(results);
+            //console.log(results);
         });
 
         if(state == 0)//ON
@@ -81,7 +81,7 @@ io.on('connection', socket => {
                     console.log(error);
                     return;
                 }
-                console.log(results);
+                //console.log(results);
             });
         }else{//OFF
             connection.query(`UPDATE deviceStatus SET OFF_time = ? WHERE id = ?;`, [moment().format(), id], (error, results) => {
@@ -90,7 +90,7 @@ io.on('connection', socket => {
                     console.log(error);
                     return;
                 }
-                console.log(results);
+                //console.log(results);
             });
         }
 
@@ -100,7 +100,7 @@ io.on('connection', socket => {
                 console.log(error);
                 return;
             }
-            console.log(results);
+            //console.log(results);
         });
         
         //Application과 Frontend에 현재 상태 DB 넘기기
@@ -110,7 +110,7 @@ io.on('connection', socket => {
                 console.log(error);
                 return;
             }
-            console.log(results);
+            console.log("socket.io 'update' sent");
             application.emit('update', results)
         });
 
@@ -122,21 +122,22 @@ io.on('connection', socket => {
                 console.log(error);
                 return;
             }
-            console.log(results);
-            console.log(results.length);
+            //console.log(results);
+            //console.log(results.length);
 
             //해당되는 Token 배열형태로 저장
             for (let i = 0; i < results.length; i++) {
-                console.log(results[i].Token);
                 target_tokens[i] = results[i].Token;
-                console.log(target_tokens[i]);
             }
-            console.log(target_tokens);
+            
 
             //해당되는 Token이 없다면 return
             if (target_tokens == 0) {
+                console.log("No notification request");
                 return
             }else{
+                console.log("Notification request");
+                console.log(target_tokens);
                 connection.query(`SELECT ON_time, OFF_time FROM deviceStatus WHERE id = ?;`, [id], function (error, results) {
                     if (error) {
                         console.log('SELECT Token query error:');
@@ -146,8 +147,6 @@ io.on('connection', socket => {
                     let hour_diff = moment(results[0].OFF_time).diff(results[0].ON_time, 'hours')
                     let minute_diff = moment(results[0].OFF_time).diff(results[0].ON_time, 'minutes') - (hour_diff*60)
                     let second_diff = moment(results[0].OFF_time).diff(results[0].ON_time, 'seconds') - (minute_diff*60) - (hour_diff*3600)
-                    console.log(hour_diff);
-                    console.log(minute_diff);
                     connection.query(`SELECT device_type FROM deviceStatus WHERE id = ?;`, [id], function (error, results) {
                         if (results[0].device_type == "WASH") {
                             //FCM 메시지 내용
@@ -181,7 +180,7 @@ io.on('connection', socket => {
                                         });
                                         console.log('List of tokens that caused failures: ' + failedTokens);
                                     }
-                                    console.log('success')
+                                    console.log('FCM Success')
                                     return
                                 });
                         } else if (results[0].device_type == "DRY") {
@@ -216,7 +215,7 @@ io.on('connection', socket => {
                                         });
                                         console.log('List of tokens that caused failures: ' + failedTokens);
                                     }
-                                    console.log('success')
+                                    console.log('FCM Success')
                                     return
                                 });
         
@@ -233,7 +232,7 @@ io.on('connection', socket => {
                 console.log(error);
                 return;
             }
-            console.log(results);
+            //console.log(results);
         });
 
     })
@@ -252,9 +251,10 @@ application.on('connection', socket => {
             console.log(error);
             return;
         }
-        console.log(results);
+        //console.log(results);
+        console.log("socket.io 'update' sent");
         application.emit('update', results)
-        console.log('==============================================')
+        //console.log('==============================================')
     });
 
     //Application에서 request_push 받으면
@@ -297,7 +297,7 @@ application.on('connection', socket => {
                             console.log(error);
                             return;
                         }
-                        console.log(results);
+                        //console.log(results);
                         console.log('Push Request Success')
                         console.log('==============================================')
                     });
@@ -319,8 +319,9 @@ application.on('connection', socket => {
                 console.log(error);
                 return;
             }
+            console.log("socket.io 'request_list' sent");
             socket.emit('request_list', results);
-            console.log(results);
+            //console.log(results);
         });
     })
     //Application에서 푸시 신청 제거하면
@@ -338,7 +339,7 @@ application.on('connection', socket => {
                 console.log(error);
                 return;
             }
-            console.log(results);
+            //console.log(results);
         });
 
         connection.query(`SELECT device_id, device_type FROM PushAlert WHERE Token = ? ORDER BY device_id;`, [token], function (error, results) {
@@ -347,8 +348,9 @@ application.on('connection', socket => {
                 console.log(error);
                 return;
             }
+            console.log("socket.io 'request_list' sent");
             socket.emit('request_list', results);
-            console.log(results);
+            //console.log(results);
         });
     })
 })
