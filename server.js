@@ -50,7 +50,7 @@ app.get('/', (req, res) => {
     res.sendFile(__dirname + '/index.html')
 })
 
-schedule.scheduleJob('* 10 * * * *', () => {
+schedule.scheduleJob("*/10 * * * *", () => {
 	console.log('schedule is executed')
 })
 
