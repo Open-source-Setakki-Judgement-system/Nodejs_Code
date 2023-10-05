@@ -268,7 +268,8 @@ application.on('connection', socket => {
         }
         //console.log(results);
         console.log("socket.io 'update' sent");
-        application.emit('update', results)
+        //application.emit('update', results)
+        application.to(socket.id).emit('update', results);
         //console.log('==============================================')
     });
 
@@ -335,7 +336,8 @@ application.on('connection', socket => {
                 return;
             }
             console.log("socket.io 'request_list' sent");
-            socket.emit('request_list', results);
+            //socket.emit('request_list', results);
+            application.to(socket.id).emit('request_list', results);
             //console.log(results);
         });
     })
@@ -364,7 +366,8 @@ application.on('connection', socket => {
                 return;
             }
             console.log("socket.io 'request_list' sent");
-            socket.emit('request_list', results);
+            //socket.emit('request_list', results);
+            application.to(socket.id).emit('request_list', results);
             //console.log(results);
         });
     })
