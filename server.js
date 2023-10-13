@@ -51,7 +51,6 @@ app.get('/', (req, res) => {
 })
 
 schedule.scheduleJob("*/10 * * * *", () => {
-	console.log('schedule is executed')
     connection.query(`SELECT id,heartbeat from deviceStatus;`, (error, results) => {
         if (error) {
             console.log('deviceStatus Select query error:');
@@ -59,9 +58,18 @@ schedule.scheduleJob("*/10 * * * *", () => {
             return;
         }
         //console.log(results);
-        // for (let i = 0; i < results.length; i++) {
-        console.log(moment(moment().format()).diff(results[0].heartbeat, 'minutes'))
-        // }
+        for (let i = 0; i < results.length; i++) {
+            if (moment(moment().format()).diff(results[i].heartbeat, 'minutes') > 10) {
+                connection.query(`UPDATE deviceStatus SET state = 4 WHERE id = ?;`, [results[i].id], (error, results) => {
+                    if (error) {
+                        console.log('deviceStatus Update query error:');
+                        console.log(error);
+                        return;
+                    }
+                });
+                console.log(results[i].id + "is dead")
+            }
+        }
     });
 })
 
