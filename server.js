@@ -60,7 +60,7 @@ schedule.scheduleJob("*/10 * * * *", () => {
         //console.log(results);
         for (let i = 0; i < results.length; i++) {
             if (moment(moment().format()).diff(results[i].heartbeat, 'minutes') > 10) {
-                connection.query(`UPDATE deviceStatus SET state = 4 WHERE id = ?;`, [results[i].id], (error, results) => {
+                connection.query(`UPDATE deviceStatus SET state = 2 WHERE id = ?;`, [results[i].id], (error, results) => {
                     if (error) {
                         console.log('deviceStatus Update query error:');
                         console.log(error);
