@@ -60,7 +60,7 @@ schedule.scheduleJob("*/10 * * * *", () => {
         }
         //console.log(results);
         // for (let i = 0; i < results.length; i++) {
-        console.log(moment().format()-results[0].heartbeat)
+        console.log(moment(moment().format()).diff(results[0].heartbeat, 'minutes'))
         // }
     });
 })
