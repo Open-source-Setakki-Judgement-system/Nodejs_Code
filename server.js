@@ -52,6 +52,17 @@ app.get('/', (req, res) => {
 
 schedule.scheduleJob("*/10 * * * *", () => {
 	console.log('schedule is executed')
+    connection.query(`SELECT id,heartbeat from deviceStatus;`, (error, results) => {
+        if (error) {
+            console.log('deviceStatus Select query error:');
+            console.log(error);
+            return;
+        }
+        //console.log(results);
+        // for (let i = 0; i < results.length; i++) {
+        console.log(moment().format()-results[0].heartbeat)
+        // }
+    });
 })
 
 //Socket.io-Gateway
