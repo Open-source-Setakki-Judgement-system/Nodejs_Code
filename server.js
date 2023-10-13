@@ -86,17 +86,15 @@ io.on('connection', socket => {
         console.log(id)
         console.log('Status:')
         console.log(state)
-        if (state == '2') {//생존신호
-            connection.query(`UPDATE deviceStatus SET heartbeat = ? WHERE id = ?;`, [moment().format(), id], (error, results) => {
-                if (error) {
-                    console.log('deviceStatus Update query error:');
-                    console.log(error);
-                    return;
-                }
-                //console.log(results);
-            });
-        }
-        else {
+        connection.query(`UPDATE deviceStatus SET heartbeat = ? WHERE id = ?;`, [moment().format(), id], (error, results) => {
+            if (error) {
+                console.log('deviceStatus Update query error:');
+                console.log(error);
+                return;
+            }
+            //console.log(results);
+        });
+        if (state != '2') {//생존신호
             //Gateway에서 Socket.io로 넘어온 값 DB에 넣기
             connection.query(`UPDATE deviceStatus SET state = ? WHERE id = ?;`, [state, id], (error, results) => {
                 if (error) {
