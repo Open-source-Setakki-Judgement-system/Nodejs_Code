@@ -44,14 +44,6 @@ const connection = mysql.createConnection({
     database: dbsettings.db
 });
 
-http.listen(http_port, () => {
-    console.log(`Listening to port ${http_port}`)
-})
-
-https.listen(https_port, () => {
-    console.log(`Listening to port ${https_port}`)
-})
-
 app.get('/', (req, res) => {
     res.sendFile(__dirname + '/index.html')
 })
@@ -73,7 +65,7 @@ app.post("/request_push", (req, res) => {
 
         //중복이면 return
         if (results.length > 0) {
-            res.status(200).send('이미 신청된 장치입니다.')
+            res.status(304).send('이미 신청된 장치입니다.')
             return;
         } else {//중복 아니면 DB에 Token 등록
             connection.query(`SELECT device_type FROM deviceStatus WHERE id = ?;`, [device_id], function (error, type_results) {
@@ -436,4 +428,12 @@ application.on('connection', socket => {
             //console.log(results);
         });
     })
+})
+
+http.listen(http_port, () => {
+    console.log(`Listening to port ${http_port}`)
+})
+
+https.listen(https_port, () => {
+    console.log(`Listening to port ${https_port}`)
 })
