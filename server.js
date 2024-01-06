@@ -6,9 +6,15 @@ const fcm = require('firebase-admin')
 const fs = require('fs');
 const moment = require("moment");
 const schedule = require('node-schedule');
+const bodyParser = require("body-parser");
 
 const app = express()
-app.use(cors())
+app.use(cors({
+    origin: '*',
+}));
+
+app.use(bodyParser.urlencoded({ extended: false }));
+app.use(bodyParser.json());
 
 require('console-stamp')(console, 'yyyy/mm/dd HH:MM:ss.l');
 
@@ -49,6 +55,48 @@ https.listen(https_port, () => {
 app.get('/', (req, res) => {
     res.sendFile(__dirname + '/index.html')
 })
+
+app.post("/request_push", (req, res) => {
+    let token = req.body.token;
+    let device_id = req.body.device_id;
+    let expect_state = req.body.expect_state;
+    console.log("Push Request [POST] Device Token: "+ token + " Device ID: " + device_id + "Expect Status: " + expect_state)
+
+    //DB에 중복되는 값 있는지 확인
+    connection.query(`SELECT Token FROM PushAlert WHERE device_id = ? AND Expect_Status = ? AND Token = ?;`, [device_id, expect_state, token], function (error, results) {
+        let type = new Array();
+        if (error) {
+            console.log('SELECT Token query error:');
+            console.log(error);
+            return;
+        }
+
+        //중복이면 return
+        if (results.length > 0) {
+            res.status(200).send('이미 신청된 장치입니다.')
+            return;
+        } else {//중복 아니면 DB에 Token 등록
+            connection.query(`SELECT device_type FROM deviceStatus WHERE id = ?;`, [device_id], function (error, type_results) {
+                if (error) {
+                    console.log('SELECT device_type query error:');
+                    console.log(error);
+                    return;
+                }
+
+                connection.query(`INSERT INTO PushAlert (Token, device_id, Expect_Status, device_type) VALUES (?, ?, ?, ?);`, [token, device_id, expect_state, type_results[0].device_type], (error, results) => {
+                    if (error) {
+                        console.log('deviceStatus Update query error:');
+                        console.log(error);
+                        return;
+                    }
+                    //console.log(results);
+                    res.status(200).send('알림 신청 성공.')
+                });
+            });
+
+        }
+    });
+});
 
 schedule.scheduleJob("*/10 * * * *", () => {
     connection.query(`SELECT id,heartbeat from deviceStatus;`, (error, results) => {
