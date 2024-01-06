@@ -48,11 +48,11 @@ app.get('/', (req, res) => {
     res.sendFile(__dirname + '/index.html')
 })
 
-app.post("/request_push", (req, res) => {
+app.post("/request_push", (req, res) => {//알림 신청 기능
     let token = req.body.token;
     let device_id = req.body.device_id;
     let expect_state = req.body.expect_state;
-    console.log("Push Request [POST] Device Token: "+ token + " Device ID: " + device_id + "Expect Status: " + expect_state)
+    console.log("Push Request [POST] Device Token: "+ token + " Device ID: " + device_id + " Expect Status: " + expect_state)
 
     //DB에 중복되는 값 있는지 확인
     connection.query(`SELECT Token FROM PushAlert WHERE device_id = ? AND Expect_Status = ? AND Token = ?;`, [device_id, expect_state, token], function (error, results) {
@@ -87,6 +87,21 @@ app.post("/request_push", (req, res) => {
             });
 
         }
+    });
+});
+
+app.post("/push_list", (req, res) => {//알림 신청 목록 확인 기능
+    let token = req.body.token;
+    console.log("Push List Request [POST] Device Token: " + token)
+
+    connection.query(`SELECT device_id, device_type, state FROM PushAlert WHERE Token = ? ORDER BY device_id;`, [token], function (error, results) {
+        if (error) {
+            console.log('SELECT Token query error:');
+            console.log(error);
+            return;
+        }
+        res.send(results)
+        //console.log(results);
     });
 });
 
