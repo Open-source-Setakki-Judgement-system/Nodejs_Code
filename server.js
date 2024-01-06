@@ -155,11 +155,10 @@ schedule.scheduleJob("*/10 * * * *", () => {
 //Socket.io-Gateway
 
 io.on('connection', socket => {
-    console.log('Socket.IO Connected:', socket.id)
+    console.log('[Socket.IO] Embedded device Connected:', socket.id)
 
     //Gateway에서 update_state 받으면
     socket.on('update_state', state_data => {
-        console.log('Status Updated')
         const { id, state, alive } = state_data;
         console.log("[Device] ID: " + id +" Status: " + state)
         connection.query(`UPDATE deviceStatus SET heartbeat = ? WHERE id = ?;`, [moment().format(), id], (error, results) => {
@@ -352,7 +351,7 @@ io.on('connection', socket => {
 //Socket.io-Application,Frontend
 
 application.on('connection', socket => {
-    console.log('[Socket.IO] Device Connected:', socket.id)
+    console.log('[Socket.IO] Client Connected:', socket.id)
 
     //Application과 Frontend에 현재 상태 DB 넘기기
     connection.query(`SELECT * FROM deviceStatus;`, function (error, results) {
