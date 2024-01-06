@@ -227,7 +227,7 @@ io.on('connection', socket => {
                         let hour_diff = moment(results[0].OFF_time).diff(results[0].ON_time, 'hours')
                         let minute_diff = moment(results[0].OFF_time).diff(results[0].ON_time, 'minutes') - (hour_diff * 60)
                         let second_diff = moment(results[0].OFF_time).diff(results[0].ON_time, 'seconds') - (minute_diff * 60) - (hour_diff * 3600)
-                        console.log("[Device] H/M/S " + hour_diff + "/" + minute_diff + "/" + second_diff +"/")
+                        console.log("[Device] Time " + hour_diff + "/" + minute_diff + "/" + second_diff)
 
                         //Gateway에서 Socket.io로 넘어온 값에 등록된 Token 조회해서 FCM 보내기
                         connection.query(`SELECT Token FROM PushAlert WHERE device_id = ? AND Expect_Status = ?;`, [id, state], function (error, results) {
