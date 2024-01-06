@@ -48,7 +48,7 @@ app.get('/', (req, res) => {
     res.sendFile(__dirname + '/index.html')
 })
 
-app.post("/request_push", (req, res) => {//알림 신청 기능
+app.post("/push_request", (req, res) => {//알림 신청 기능
     let token = req.body.token;
     let device_id = req.body.device_id;
     let expect_state = req.body.expect_state;
@@ -103,6 +103,30 @@ app.post("/push_list", (req, res) => {//알림 신청 목록 확인 기능
         res.send(results)
         //console.log(results);
     });
+});
+
+app.post("/push_cancel", (req, res) => {//알림 취소 기능
+    let token = req.body.token;
+    let device_id = req.body.device_id;
+    console.log("Push Cancel Request [POST] Device Token: " + token + " Device ID: " + device_id)
+
+    connection.query(`DELETE FROM PushAlert WHERE device_id = ? AND Token = ?;`, [device_id, token], function (error, results) {
+        if (error) {
+            console.log('SELECT Token query error:');
+            console.log(error);
+            return;
+        }
+
+        connection.query(`SELECT device_id, device_type FROM PushAlert WHERE Token = ? ORDER BY device_id;`, [token], function (error, results) {
+            if (error) {
+                console.log('SELECT Token query error:');
+                console.log(error);
+                return;
+            }
+            res.send(results)
+        });
+    });
+
 });
 
 schedule.scheduleJob("*/10 * * * *", () => {
