@@ -217,40 +217,42 @@ io.on('connection', socket => {
                         console.log(error);
                         return;
                     }
-                    //Gateway에서 Socket.io로 넘어온 값에 등록된 Token 조회해서 FCM 보내기
-                    connection.query(`SELECT Token FROM PushAlert WHERE device_id = ? AND Expect_Status = ?;`, [id, state], function (error, results) {
-                        let target_tokens = new Array();
+
+                    connection.query(`SELECT ON_time, OFF_time FROM deviceStatus WHERE id = ?;`, [id], function (error, results) {
                         if (error) {
                             console.log('SELECT Token query error:');
                             console.log(error);
                             return;
                         }
-                        //console.log(results);
-                        //console.log(results.length);
+                        let hour_diff = moment(results[0].OFF_time).diff(results[0].ON_time, 'hours')
+                        let minute_diff = moment(results[0].OFF_time).diff(results[0].ON_time, 'minutes') - (hour_diff * 60)
+                        let second_diff = moment(results[0].OFF_time).diff(results[0].ON_time, 'seconds') - (minute_diff * 60) - (hour_diff * 3600)
+                        console.log("[Device] H/M/S " + hour_diff + "/" + minute_diff + "/" + second_diff +"/")
 
-                        //해당되는 Token 배열형태로 저장
-                        for (let i = 0; i < results.length; i++) {
-                            target_tokens[i] = results[i].Token;
-                        }
+                        //Gateway에서 Socket.io로 넘어온 값에 등록된 Token 조회해서 FCM 보내기
+                        connection.query(`SELECT Token FROM PushAlert WHERE device_id = ? AND Expect_Status = ?;`, [id, state], function (error, results) {
+                            let target_tokens = new Array();
+                            if (error) {
+                                console.log('SELECT Token query error:');
+                                console.log(error);
+                                return;
+                            }
+                            //console.log(results);
+                            //console.log(results.length);
+
+                            //해당되는 Token 배열형태로 저장
+                            for (let i = 0; i < results.length; i++) {
+                                target_tokens[i] = results[i].Token;
+                            }
 
 
-                        //해당되는 Token이 없다면 return
-                        if (target_tokens == 0) {
-                            console.log("[FCM] No push request (" + id + ")");
-                            return
-                        } else {
-                            console.log("[FCM] Push Sent");
-                            console.log("[FCM] " + target_tokens);
-
-                            connection.query(`SELECT ON_time, OFF_time FROM deviceStatus WHERE id = ?;`, [id], function (error, results) {
-                                if (error) {
-                                    console.log('SELECT Token query error:');
-                                    console.log(error);
-                                    return;
-                                }
-                                let hour_diff = moment(results[0].OFF_time).diff(results[0].ON_time, 'hours')
-                                let minute_diff = moment(results[0].OFF_time).diff(results[0].ON_time, 'minutes') - (hour_diff * 60)
-                                let second_diff = moment(results[0].OFF_time).diff(results[0].ON_time, 'seconds') - (minute_diff * 60) - (hour_diff * 3600)
+                            //해당되는 Token이 없다면 return
+                            if (target_tokens == 0) {
+                                console.log("[FCM] No push request (" + id + ")");
+                                return
+                            } else {
+                                console.log("[FCM] Push Sent");
+                                console.log("[FCM] " + target_tokens);
 
                                 connection.query(`SELECT device_type FROM deviceStatus WHERE id = ?;`, [id], function (error, results) {
                                     if (results[0].device_type == "WASH") {
@@ -326,19 +328,20 @@ io.on('connection', socket => {
 
                                     }
                                 });
-                            });
-                        }
-                    });
 
-                    //FCM 메시지 보낸 Token 제거
-                    connection.query(`DELETE FROM PushAlert WHERE device_id = ? AND Expect_Status = ?;`, [id, state], function (error, results) {
-                        if (error) {
-                            console.log('DELETE Token query error:');
-                            console.log(error);
-                            return;
-                        }
-                        //console.log(results);
-                    });
+                            }
+                        });
+
+                        //FCM 메시지 보낸 Token 제거
+                        connection.query(`DELETE FROM PushAlert WHERE device_id = ? AND Expect_Status = ?;`, [id, state], function (error, results) {
+                            if (error) {
+                                console.log('DELETE Token query error:');
+                                console.log(error);
+                                return;
+                            }
+                            //console.log(results);
+                        });
+                    })
                 });
 
             }
