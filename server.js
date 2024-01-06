@@ -52,7 +52,7 @@ app.post("/push_request", (req, res) => {//알림 신청 기능
     let token = req.body.token;
     let device_id = req.body.device_id;
     let expect_state = req.body.expect_state;
-    console.log("Push Request [POST] Device Token: "+ token + " Device ID: " + device_id + " Expect Status: " + expect_state)
+    console.log("[App] Push Request Device Token: "+ token + " Device ID: " + device_id + " Expect Status: " + expect_state)
 
     //DB에 중복되는 값 있는지 확인
     connection.query(`SELECT Token FROM PushAlert WHERE device_id = ? AND Expect_Status = ? AND Token = ?;`, [device_id, expect_state, token], function (error, results) {
@@ -92,7 +92,7 @@ app.post("/push_request", (req, res) => {//알림 신청 기능
 
 app.post("/push_list", (req, res) => {//알림 신청 목록 확인 기능
     let token = req.body.token;
-    console.log("Push List Request [POST] Device Token: " + token)
+    console.log("[App] Push List Request Device Token: " + token)
 
     connection.query(`SELECT device_id, device_type, state FROM PushAlert WHERE Token = ? ORDER BY device_id;`, [token], function (error, results) {
         if (error) {
@@ -108,7 +108,7 @@ app.post("/push_list", (req, res) => {//알림 신청 목록 확인 기능
 app.post("/push_cancel", (req, res) => {//알림 취소 기능
     let token = req.body.token;
     let device_id = req.body.device_id;
-    console.log("Push Cancel Request [POST] Device Token: " + token + " Device ID: " + device_id)
+    console.log("[App] Push Cancel Request Device Token: " + token + " Device ID: " + device_id)
 
     connection.query(`DELETE FROM PushAlert WHERE device_id = ? AND Token = ?;`, [device_id, token], function (error, results) {
         if (error) {
@@ -146,7 +146,7 @@ schedule.scheduleJob("*/10 * * * *", () => {
                         return;
                     }
                 });
-                console.log(results[i].id + "is dead")
+                //console.log(results[i].id + "is dead")
             }
         }
     });
@@ -161,10 +161,7 @@ io.on('connection', socket => {
     socket.on('update_state', state_data => {
         console.log('Status Updated')
         const { id, state, alive } = state_data;
-        console.log('Device ID:')
-        console.log(id)
-        console.log('Status:')
-        console.log(state)
+        console.log("[Device] ID: " + id +" Status: " + state)
         connection.query(`UPDATE deviceStatus SET heartbeat = ? WHERE id = ?;`, [moment().format(), id], (error, results) => {
             if (error) {
                 console.log('deviceStatus Update query error:');
@@ -221,7 +218,7 @@ io.on('connection', socket => {
                     console.log(error);
                     return;
                 }
-                console.log("socket.io 'update' sent");
+                //console.log("socket.io 'update' sent");
                 application.emit('update', results)
             });
 
@@ -244,11 +241,12 @@ io.on('connection', socket => {
 
                 //해당되는 Token이 없다면 return
                 if (target_tokens == 0) {
-                    console.log("No notification request");
+                    console.log("[FCM] No push request ("+ id +")");
                     return
                 } else {
-                    console.log("Notification request");
-                    console.log(target_tokens);
+                    console.log("[FCM] Push Sent");
+                    console.log("[FCM] "+ target_tokens);
+
                     connection.query(`SELECT ON_time, OFF_time FROM deviceStatus WHERE id = ?;`, [id], function (error, results) {
                         if (error) {
                             console.log('SELECT Token query error:');
@@ -258,6 +256,7 @@ io.on('connection', socket => {
                         let hour_diff = moment(results[0].OFF_time).diff(results[0].ON_time, 'hours')
                         let minute_diff = moment(results[0].OFF_time).diff(results[0].ON_time, 'minutes') - (hour_diff * 60)
                         let second_diff = moment(results[0].OFF_time).diff(results[0].ON_time, 'seconds') - (minute_diff * 60) - (hour_diff * 3600)
+
                         connection.query(`SELECT device_type FROM deviceStatus WHERE id = ?;`, [id], function (error, results) {
                             if (results[0].device_type == "WASH") {
                                 //FCM 메시지 내용
@@ -289,9 +288,9 @@ io.on('connection', socket => {
                                                     failedTokens.push(target_tokens[idx]);
                                                 }
                                             });
-                                            console.log('List of tokens that caused failures: ' + failedTokens);
+                                            console.log('[FCM] Failed Token: ' + failedTokens);
                                         }
-                                        console.log('FCM Success')
+                                        //console.log('FCM Success')
                                         return
                                     });
                             } else if (results[0].device_type == "DRY") {
@@ -324,9 +323,9 @@ io.on('connection', socket => {
                                                     failedTokens.push(target_tokens[idx]);
                                                 }
                                             });
-                                            console.log('List of tokens that caused failures: ' + failedTokens);
+                                            console.log('[FCM] Failed Token:' + failedTokens);
                                         }
-                                        console.log('FCM Success')
+                                        //console.log('FCM Success')
                                         return
                                     });
 
@@ -353,7 +352,7 @@ io.on('connection', socket => {
 //Socket.io-Application,Frontend
 
 application.on('connection', socket => {
-    console.log('Socket.IO Connected:', socket.id)
+    console.log('[Socket.IO] Device Connected:', socket.id)
 
     //Application과 Frontend에 현재 상태 DB 넘기기
     connection.query(`SELECT * FROM deviceStatus;`, function (error, results) {
@@ -362,24 +361,14 @@ application.on('connection', socket => {
             console.log(error);
             return;
         }
-        //console.log(results);
-        console.log("socket.io 'update' sent");
-        //application.emit('update', results)
         application.to(socket.id).emit('update', results);
         //console.log('==============================================')
     });
 
     //Application에서 request_push 받으면
     socket.on('request_push', push_data => {
-        console.log('Push Request Received')
         const { token, device_id, expect_state } = push_data;
-        console.log('Device Token:')
-        console.log(token)
-        console.log('Device ID:')
-        console.log(device_id)
-        console.log('Expectd Status:')
-        console.log(expect_state)
-        const device_type = ""
+        console.log("[App] Push Request Device Token: "+ token + " Device ID: " + device_id + " Expect Status: " + expect_state)
 
         //DB에 중복되는 값 있는지 확인
         connection.query(`SELECT Token FROM PushAlert WHERE device_id = ? AND Expect_Status = ? AND Token = ?;`, [device_id, expect_state, token], function (error, results) {
@@ -410,8 +399,6 @@ application.on('connection', socket => {
                             return;
                         }
                         //console.log(results);
-                        console.log('Push Request Success')
-                        console.log('==============================================')
                     });
                 });
 
@@ -420,10 +407,8 @@ application.on('connection', socket => {
     })
     //Application에서 푸시 신청 목록 보기 누르면
     socket.on('view_request', view_requset_data => {
-        console.log('Push Request List Received')
         const { token } = view_requset_data;
-        console.log('Device Token:')
-        console.log(token)
+        console.log("[App] Push List Request Device Token: " + token)
 
         connection.query(`SELECT device_id, device_type, state FROM PushAlert WHERE Token = ? ORDER BY device_id;`, [token], function (error, results) {
             if (error) {
@@ -431,7 +416,7 @@ application.on('connection', socket => {
                 console.log(error);
                 return;
             }
-            console.log("socket.io 'request_list' sent");
+            //console.log("socket.io 'request_list' sent");
             //socket.emit('request_list', results);
             application.to(socket.id).emit('request_list', results);
             //console.log(results);
@@ -439,12 +424,8 @@ application.on('connection', socket => {
     })
     //Application에서 푸시 신청 제거하면
     socket.on('remove_request', remove_request_data => {
-        console.log('Push Request remove Received')
         const { token, device_id } = remove_request_data;
-        console.log('Device Token:')
-        console.log(token)
-        console.log('Device ID:')
-        console.log(device_id)
+        console.log("[App] Push Cancel Request Device Token: " + token + " Device ID: " + device_id)
 
         connection.query(`DELETE FROM PushAlert WHERE device_id = ? AND Token = ?;`, [device_id, token], function (error, results) {
             if (error) {
@@ -461,7 +442,7 @@ application.on('connection', socket => {
                 console.log(error);
                 return;
             }
-            console.log("socket.io 'request_list' sent");
+            //console.log("socket.io 'request_list' sent");
             //socket.emit('request_list', results);
             application.to(socket.id).emit('request_list', results);
             //console.log(results);
