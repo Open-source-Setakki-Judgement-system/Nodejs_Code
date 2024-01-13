@@ -347,7 +347,9 @@ io.on('connection', socket => {
             }
         }
     })
-
+    socket.on('disconnect', function() {
+        console.log('[Socket.IO] Embedded device Disconnected:', socket.id)
+    })
 })
 
 //Socket.io-Application,Frontend
