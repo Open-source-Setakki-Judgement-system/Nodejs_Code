@@ -329,7 +329,7 @@ function StatusUpdate(id,state) {
             return;
         }
         ClientSocket.clients.forEach(function (client) {
-            client.send(results);
+            client.send(JSON.stringify(results));
         });
     });
 
