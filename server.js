@@ -145,9 +145,6 @@ DeviceSocket.on('connection', (ws, request) => {//장치 Websocket
         const device_data = JSON.parse(msg)
         console.log("[Device] ID: " + device_data.id + " Status: " + device_data.state)
         StatusUpdate(device_data.id,device_data.state)
-        ClientSocket.clients.forEach(function (client) {
-            client.send(msg.toString());
-        });
     })
 
     ws.on('close', () => {
@@ -322,6 +319,18 @@ function StatusUpdate(id,state) {
             return;
         }
         //console.log(results);
+    });
+
+    //Application과 Frontend에 현재 상태 DB 넘기기
+    connection.query(`SELECT * FROM deviceStatus WHERE device_id = ?;`, [id],function (error, results) {
+        if (error) {
+            console.log('SELECT * FROM deviceStatus query error:');
+            console.log(error);
+            return;
+        }
+        ClientSocket.clients.forEach(function (client) {
+            client.send(results);
+        });
     });
 
     if (state == 0)//ON
