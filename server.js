@@ -350,7 +350,7 @@ function StatusUpdate(id,state) {
         device_status_str = "작동중"
     }
     const channel = client.channels.cache.get(credential.discord_channelid);
-    channel.send(`${id}번 기기의 상태를 ${device_status_str}으로 변경했습니다.`);
+    channel.send(`${id}번 기기의 상태가 ${device_status_str}으로 변경되었습니다.`);
     //Gateway에서 Socket.io로 넘어온 값 DB에 넣기
     connection.query(`UPDATE deviceStatus SET state = ? WHERE id = ?;`, [state, id], (error, results) => {
         if (error) {
