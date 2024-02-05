@@ -125,8 +125,7 @@ https.on('upgrade', function upgrade(request, socket, head) {
     }
 });
 
-ClientSocket.on('connection', (ws, request) => {
-    console.log(`Client Connected`);
+ClientSocket.on('connection', (ws, request) => {//클라이언트 Websocket
     if (ws.readyState === ws.OPEN) {
         ws.send(`Hello From Server`);
     }
@@ -135,16 +134,17 @@ ClientSocket.on('connection', (ws, request) => {
     })
 });
 
-DeviceSocket.on('connection', (ws, request) => {
+DeviceSocket.on('connection', (ws, request) => {//장치 Websocket
     //console.log(request.headers);
     ws.isAlive = true;
     ws.on('pong', heartbeat);
     if (ws.readyState === ws.OPEN) {
-        ws.send(`Hello From Server`);
     }
 
     ws.on('message', (msg) => {
-        console.log(`Message Received : ${msg}`);
+        const {id, state} = state_data;
+        console.log("[Device] "+id+" "+state);
+        StatusUpdate(id,state)
         ClientSocket.clients.forEach(function (client) {
             client.send(msg.toString());
         });
@@ -155,14 +155,14 @@ DeviceSocket.on('connection', (ws, request) => {
     })
 });
 
-const interval = setInterval(function ping() {
+const interval = setInterval(function ping() {//장치 Heartbeat
     DeviceSocket.clients.forEach(function each(ws) {
         if (ws.isAlive === false) return ws.terminate();
         console.log("ping");
         ws.isAlive = false;
         ws.ping();
     });
-}, 10000);
+}, 20000);
 
 app.get('/', (req, res) => {
     res.sendStatus(200)
