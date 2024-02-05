@@ -9,22 +9,28 @@ const schedule = require('node-schedule');
 const bodyParser = require("body-parser");
 const auth = require('basic-auth');
 const rateLimit = require('express-rate-limit');
+const url = require('url');
+
+const { Client, IntentsBitField } = require('discord.js');
+const client = new Client({
+    intents: [
+        IntentsBitField.Flags.Guilds,
+        IntentsBitField.Flags.GuildMembers,
+        IntentsBitField.Flags.GuildMessages,
+        IntentsBitField.Flags.MessageContent,
+    ],
+});
 
 const app = express()
-
 app.use(cors({
     origin: '*',
 }));
-
 app.use(rateLimit({ 
     windowMs: 1*60*1000, 
     max: 100 
     })
 );
-
 app.set('trust proxy', 1)
-
-
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 
@@ -56,17 +62,29 @@ const connection = mysql.createConnection({
     database: credential.mysql_db
 });
 
-function authenticate(req, res, next) {
-    const user = auth(req);
-
-    if (!user || user.name !== credential.auth_name || user.pass !== credential.auth_pw) {
-        res.statusCode = 401;
-        res.setHeader('WWW-Authenticate', 'Basic realm="Go Away"');
-        res.end('Unauthorized');
-    } else {
-        next();
+client.on('messageCreate', (message) => {
+    if (message.author.bot) {
+        return;
     }
-}
+});
+
+client.on('interactionCreate', (interaction) => {
+    if (!interaction.isChatInputCommand()) return;
+
+    if (interaction.commandName === '상태변경') {
+        const device_no = interaction.options.get('first-number').value;
+        const device_status = interaction.options.get('second-number').value;
+        console.log("[Discord] Status Updated Device_NO:" + device_no + " Data:" + device_status);
+        StatusUpdate(device_no,device_status)
+        return interaction.reply('OK');
+    }
+});
+
+client.on('ready', (c) => {
+    console.log(`${c.user.tag} is online.`);
+});
+
+client.login(credential.discord_token);
 
 app.get('/', (req, res) => {
     res.sendFile(__dirname + '/index.html')
@@ -324,6 +342,15 @@ https.listen(https_port, () => {
 })
 
 function StatusUpdate(id,state) {
+    let device_status_str
+    if(state == 1)
+    {
+        device_status_str = "사용가능"
+    }else if(state == 0){
+        device_status_str = "작동중"
+    }
+    const channel = client.channels.cache.get(credential.discord_channelid);
+    channel.send(`${id}번 기기의 상태를 ${device_status_str}으로 변경했습니다.`);
     //Gateway에서 Socket.io로 넘어온 값 DB에 넣기
     connection.query(`UPDATE deviceStatus SET state = ? WHERE id = ?;`, [state, id], (error, results) => {
         if (error) {
