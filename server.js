@@ -87,7 +87,7 @@ client.on('ready', (c) => {
 client.login(credential.discord_token);
 
 app.get('/', (req, res) => {
-    res.sendFile(__dirname + '/index.html')
+    res.sendStatus(200)
 })
 
 app.get("/device_list", (req, res) => {//장치 목록
