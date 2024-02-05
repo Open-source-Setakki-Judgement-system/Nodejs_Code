@@ -165,204 +165,6 @@ app.post("/push_cancel", (req, res) => {//알림 취소 기능
 
 });
 
-app.post('/device', authenticate, (req, res) => {
-    //console.log(req.body)
-    console.log("[Device] Subject : " + req.body[0] + " HWID: " + req.body[1].HW_ID + " Device_NO: " + req.body[1].Device_No + " Data: " + req.body[1].Data)
-    connection.query(`UPDATE deviceStatus SET heartbeat = ? WHERE id = ?;`, [moment().format(), req.body[1].Device_No], (error, results) => {
-        if (error) {
-            console.log('deviceStatus Update query error:');
-            console.log(error);
-            return;
-        }
-        //console.log(results);
-    });
-    switch (req.body[0]) {
-        case 'update_state':
-            const id = req.body[1].Device_No
-            const state = req.body[1].Data
-            //Gateway에서 Socket.io로 넘어온 값 DB에 넣기
-            connection.query(`UPDATE deviceStatus SET state = ? WHERE id = ?;`, [state, id], (error, results) => {
-                if (error) {
-                    console.log('deviceStatus Update query error:');
-                    console.log(error);
-                    return;
-                }
-                //console.log(results);
-            });
-
-            connection.query(`UPDATE PushAlert SET state = ? WHERE device_id = ?;`, [state, id], (error, results) => {
-                if (error) {
-                    console.log('deviceStatus Update query error:');
-                    console.log(error);
-                    return;
-                }
-                //console.log(results);
-            });
-
-            //Application과 Frontend에 현재 상태 DB 넘기기
-            connection.query(`SELECT * FROM deviceStatus;`, function (error, results) {
-                if (error) {
-                    console.log('SELECT * FROM deviceStatus query error:');
-                    console.log(error);
-                    return;
-                }
-                //console.log("socket.io 'update' sent");
-                application.emit('update', results)
-            });
-
-            if (state == 0)//ON
-            {
-                connection.query(`UPDATE deviceStatus SET ON_time = ? WHERE id = ?;`, [moment().format(), id], (error, results) => {
-                    if (error) {
-                        console.log('deviceStatus Update query error:');
-                        console.log(error);
-                        return;
-                    }
-                    //console.log(results);
-                });
-            } else {//OFF
-                connection.query(`UPDATE deviceStatus SET OFF_time = ? WHERE id = ?;`, [moment().format(), id], (error, results) => {
-                    if (error) {
-                        console.log('deviceStatus Update query error:');
-                        console.log(error);
-                        return;
-                    }
-
-                    connection.query(`SELECT ON_time, OFF_time FROM deviceStatus WHERE id = ?;`, [id], function (error, results) {
-                        if (error) {
-                            console.log('SELECT Token query error:');
-                            console.log(error);
-                            return;
-                        }
-                        let hour_diff = moment(results[0].OFF_time).diff(results[0].ON_time, 'hours')
-                        let minute_diff = moment(results[0].OFF_time).diff(results[0].ON_time, 'minutes') - (hour_diff * 60)
-                        let second_diff = moment(results[0].OFF_time).diff(results[0].ON_time, 'seconds') - (minute_diff * 60) - (hour_diff * 3600)
-                        console.log("[Device] Time " + hour_diff + "/" + minute_diff + "/" + second_diff)
-
-                        //Gateway에서 Socket.io로 넘어온 값에 등록된 Token 조회해서 FCM 보내기
-                        connection.query(`SELECT Token FROM PushAlert WHERE device_id = ? AND Expect_Status = ?;`, [id, state], function (error, results) {
-                            let target_tokens = new Array();
-                            if (error) {
-                                console.log('SELECT Token query error:');
-                                console.log(error);
-                                return;
-                            }
-                            //console.log(results);
-                            //console.log(results.length);
-
-                            //해당되는 Token 배열형태로 저장
-                            for (let i = 0; i < results.length; i++) {
-                                target_tokens[i] = results[i].Token;
-                            }
-
-
-                            //해당되는 Token이 없다면 return
-                            if (target_tokens == 0) {
-                                console.log("[FCM] No push request (" + id + ")");
-                                return
-                            } else {
-                                console.log("[FCM] Push Sent");
-                                console.log("[FCM] " + target_tokens);
-
-                                connection.query(`SELECT device_type FROM deviceStatus WHERE id = ?;`, [id], function (error, results) {
-                                    if (results[0].device_type == "WASH") {
-                                        //FCM 메시지 내용
-                                        let message = {
-                                            notification: {
-                                                title: '세탁기 알림',
-                                                body: `${id}번 세탁기의 동작이 완료되었습니다.\r\n동작시간 : ${hour_diff}시간 ${minute_diff}분 ${second_diff}초`,
-                                            },
-                                            tokens: target_tokens,
-                                            android: {
-                                                priority: "high"
-                                            },
-                                            apns: {
-                                                payload: {
-                                                    aps: {
-                                                        contentAvailable: true,
-                                                    }
-                                                }
-                                            }
-                                        }
-
-                                        //FCM 메시지 보내기
-                                        fcm.messaging().sendMulticast(message)
-                                            .then((response) => {
-                                                if (response.failureCount > 0) {
-                                                    const failedTokens = [];
-                                                    response.responses.forEach((resp, idx) => {
-                                                        if (!resp.success) {
-                                                            failedTokens.push(target_tokens[idx]);
-                                                        }
-                                                    });
-                                                    console.log('[FCM] Failed Token: ' + failedTokens);
-                                                }
-                                                //console.log('FCM Success')
-                                                return
-                                            });
-                                    } else if (results[0].device_type == "DRY") {
-                                        //FCM 메시지 내용
-                                        let message = {
-                                            notification: {
-                                                title: '건조기 알림',
-                                                body: `${id}번 건조기의 동작이 완료되었습니다.\r\n동작시간 : ${hour_diff}시간 ${minute_diff}분 ${second_diff}초`,
-                                            },
-                                            tokens: target_tokens,
-                                            android: {
-                                                priority: "high"
-                                            },
-                                            apns: {
-                                                payload: {
-                                                    aps: {
-                                                        contentAvailable: true,
-                                                    }
-                                                }
-                                            }
-                                        }
-
-                                        //FCM 메시지 보내기
-                                        fcm.messaging().sendMulticast(message)
-                                            .then((response) => {
-                                                if (response.failureCount > 0) {
-                                                    const failedTokens = [];
-                                                    response.responses.forEach((resp, idx) => {
-                                                        if (!resp.success) {
-                                                            failedTokens.push(target_tokens[idx]);
-                                                        }
-                                                    });
-                                                    console.log('[FCM] Failed Token:' + failedTokens);
-                                                }
-                                                //console.log('FCM Success')
-                                                return
-                                            });
-
-                                    }
-                                });
-
-                            }
-                        });
-
-                        //FCM 메시지 보낸 Token 제거
-                        connection.query(`DELETE FROM PushAlert WHERE device_id = ? AND Expect_Status = ?;`, [id, state], function (error, results) {
-                            if (error) {
-                                console.log('DELETE Token query error:');
-                                console.log(error);
-                                return;
-                            }
-                            //console.log(results);
-                        });
-                    })
-                });
-            }
-            break;
-        case 'IM_STILL_ALIVE':
-            break;
-        default:
-            console.log(`[Device] Unknown Message`);
-    }
-    res.sendStatus(200)
-})
-
 schedule.scheduleJob("*/10 * * * *", () => {
     connection.query(`SELECT id,heartbeat from deviceStatus;`, (error, results) => {
         if (error) {
@@ -404,181 +206,7 @@ io.on('connection', socket => {
             //console.log(results);
         });
         if (state != '2') {//생존신호
-            //Gateway에서 Socket.io로 넘어온 값 DB에 넣기
-            connection.query(`UPDATE deviceStatus SET state = ? WHERE id = ?;`, [state, id], (error, results) => {
-                if (error) {
-                    console.log('deviceStatus Update query error:');
-                    console.log(error);
-                    return;
-                }
-                //console.log(results);
-            });
-
-            connection.query(`UPDATE PushAlert SET state = ? WHERE device_id = ?;`, [state, id], (error, results) => {
-                if (error) {
-                    console.log('deviceStatus Update query error:');
-                    console.log(error);
-                    return;
-                }
-                //console.log(results);
-            });
-
-            //Application과 Frontend에 현재 상태 DB 넘기기
-            connection.query(`SELECT * FROM deviceStatus;`, function (error, results) {
-                if (error) {
-                    console.log('SELECT * FROM deviceStatus query error:');
-                    console.log(error);
-                    return;
-                }
-                //console.log("socket.io 'update' sent");
-                application.emit('update', results)
-            });
-
-            if (state == 0)//ON
-            {
-                connection.query(`UPDATE deviceStatus SET ON_time = ? WHERE id = ?;`, [moment().format(), id], (error, results) => {
-                    if (error) {
-                        console.log('deviceStatus Update query error:');
-                        console.log(error);
-                        return;
-                    }
-                    //console.log(results);
-                });
-            } else {//OFF
-                connection.query(`UPDATE deviceStatus SET OFF_time = ? WHERE id = ?;`, [moment().format(), id], (error, results) => {
-                    if (error) {
-                        console.log('deviceStatus Update query error:');
-                        console.log(error);
-                        return;
-                    }
-
-                    connection.query(`SELECT ON_time, OFF_time FROM deviceStatus WHERE id = ?;`, [id], function (error, results) {
-                        if (error) {
-                            console.log('SELECT Token query error:');
-                            console.log(error);
-                            return;
-                        }
-                        let hour_diff = moment(results[0].OFF_time).diff(results[0].ON_time, 'hours')
-                        let minute_diff = moment(results[0].OFF_time).diff(results[0].ON_time, 'minutes') - (hour_diff * 60)
-                        let second_diff = moment(results[0].OFF_time).diff(results[0].ON_time, 'seconds') - (minute_diff * 60) - (hour_diff * 3600)
-                        console.log("[Device] Time " + hour_diff + "/" + minute_diff + "/" + second_diff)
-
-                        //Gateway에서 Socket.io로 넘어온 값에 등록된 Token 조회해서 FCM 보내기
-                        connection.query(`SELECT Token FROM PushAlert WHERE device_id = ? AND Expect_Status = ?;`, [id, state], function (error, results) {
-                            let target_tokens = new Array();
-                            if (error) {
-                                console.log('SELECT Token query error:');
-                                console.log(error);
-                                return;
-                            }
-                            //console.log(results);
-                            //console.log(results.length);
-
-                            //해당되는 Token 배열형태로 저장
-                            for (let i = 0; i < results.length; i++) {
-                                target_tokens[i] = results[i].Token;
-                            }
-
-
-                            //해당되는 Token이 없다면 return
-                            if (target_tokens == 0) {
-                                console.log("[FCM] No push request (" + id + ")");
-                                return
-                            } else {
-                                console.log("[FCM] Push Sent");
-                                console.log("[FCM] " + target_tokens);
-
-                                connection.query(`SELECT device_type FROM deviceStatus WHERE id = ?;`, [id], function (error, results) {
-                                    if (results[0].device_type == "WASH") {
-                                        //FCM 메시지 내용
-                                        let message = {
-                                            notification: {
-                                                title: '세탁기 알림',
-                                                body: `${id}번 세탁기의 동작이 완료되었습니다.\r\n동작시간 : ${hour_diff}시간 ${minute_diff}분 ${second_diff}초`,
-                                            },
-                                            tokens: target_tokens,
-                                            android: {
-                                                priority: "high"
-                                            },
-                                            apns: {
-                                                payload: {
-                                                    aps: {
-                                                        contentAvailable: true,
-                                                    }
-                                                }
-                                            }
-                                        }
-
-                                        //FCM 메시지 보내기
-                                        fcm.messaging().sendMulticast(message)
-                                            .then((response) => {
-                                                if (response.failureCount > 0) {
-                                                    const failedTokens = [];
-                                                    response.responses.forEach((resp, idx) => {
-                                                        if (!resp.success) {
-                                                            failedTokens.push(target_tokens[idx]);
-                                                        }
-                                                    });
-                                                    console.log('[FCM] Failed Token: ' + failedTokens);
-                                                }
-                                                //console.log('FCM Success')
-                                                return
-                                            });
-                                    } else if (results[0].device_type == "DRY") {
-                                        //FCM 메시지 내용
-                                        let message = {
-                                            notification: {
-                                                title: '건조기 알림',
-                                                body: `${id}번 건조기의 동작이 완료되었습니다.\r\n동작시간 : ${hour_diff}시간 ${minute_diff}분 ${second_diff}초`,
-                                            },
-                                            tokens: target_tokens,
-                                            android: {
-                                                priority: "high"
-                                            },
-                                            apns: {
-                                                payload: {
-                                                    aps: {
-                                                        contentAvailable: true,
-                                                    }
-                                                }
-                                            }
-                                        }
-
-                                        //FCM 메시지 보내기
-                                        fcm.messaging().sendMulticast(message)
-                                            .then((response) => {
-                                                if (response.failureCount > 0) {
-                                                    const failedTokens = [];
-                                                    response.responses.forEach((resp, idx) => {
-                                                        if (!resp.success) {
-                                                            failedTokens.push(target_tokens[idx]);
-                                                        }
-                                                    });
-                                                    console.log('[FCM] Failed Token:' + failedTokens);
-                                                }
-                                                //console.log('FCM Success')
-                                                return
-                                            });
-
-                                    }
-                                });
-
-                            }
-                        });
-
-                        //FCM 메시지 보낸 Token 제거
-                        connection.query(`DELETE FROM PushAlert WHERE device_id = ? AND Expect_Status = ?;`, [id, state], function (error, results) {
-                            if (error) {
-                                console.log('DELETE Token query error:');
-                                console.log(error);
-                                return;
-                            }
-                            //console.log(results);
-                        });
-                    })
-                });
-
-            }
+            StatusUpdate(id,state)
         }
     })
     socket.on('disconnect', function() {
@@ -694,3 +322,182 @@ http.listen(http_port, () => {
 https.listen(https_port, () => {
     console.log(`Listening to port ${https_port}`)
 })
+
+function StatusUpdate(id,state) {
+    //Gateway에서 Socket.io로 넘어온 값 DB에 넣기
+    connection.query(`UPDATE deviceStatus SET state = ? WHERE id = ?;`, [state, id], (error, results) => {
+        if (error) {
+            console.log('deviceStatus Update query error:');
+            console.log(error);
+            return;
+        }
+        //console.log(results);
+    });
+
+    connection.query(`UPDATE PushAlert SET state = ? WHERE device_id = ?;`, [state, id], (error, results) => {
+        if (error) {
+            console.log('deviceStatus Update query error:');
+            console.log(error);
+            return;
+        }
+        //console.log(results);
+    });
+
+    //Application과 Frontend에 현재 상태 DB 넘기기
+    connection.query(`SELECT * FROM deviceStatus;`, function (error, results) {
+        if (error) {
+            console.log('SELECT * FROM deviceStatus query error:');
+            console.log(error);
+            return;
+        }
+        //console.log("socket.io 'update' sent");
+        application.emit('update', results)
+        //WebSocket으로 수정요함
+    });
+
+    if (state == 0)//ON
+    {
+        connection.query(`UPDATE deviceStatus SET ON_time = ? WHERE id = ?;`, [moment().format(), id], (error, results) => {
+            if (error) {
+                console.log('deviceStatus Update query error:');
+                console.log(error);
+                return;
+            }
+            //console.log(results);
+        });
+    } else {//OFF
+        connection.query(`UPDATE deviceStatus SET OFF_time = ? WHERE id = ?;`, [moment().format(), id], (error, results) => {
+            if (error) {
+                console.log('deviceStatus Update query error:');
+                console.log(error);
+                return;
+            }
+
+            connection.query(`SELECT ON_time, OFF_time FROM deviceStatus WHERE id = ?;`, [id], function (error, results) {
+                if (error) {
+                    console.log('SELECT Token query error:');
+                    console.log(error);
+                    return;
+                }
+                let hour_diff = moment(results[0].OFF_time).diff(results[0].ON_time, 'hours')
+                let minute_diff = moment(results[0].OFF_time).diff(results[0].ON_time, 'minutes') - (hour_diff * 60)
+                let second_diff = moment(results[0].OFF_time).diff(results[0].ON_time, 'seconds') - (minute_diff * 60) - (hour_diff * 3600)
+                console.log("[Device] Time " + hour_diff + "/" + minute_diff + "/" + second_diff)
+
+                //Gateway에서 Socket.io로 넘어온 값에 등록된 Token 조회해서 FCM 보내기
+                connection.query(`SELECT Token FROM PushAlert WHERE device_id = ? AND Expect_Status = ?;`, [id, state], function (error, results) {
+                    let target_tokens = new Array();
+                    if (error) {
+                        console.log('SELECT Token query error:');
+                        console.log(error);
+                        return;
+                    }
+                    //console.log(results);
+                    //console.log(results.length);
+
+                    //해당되는 Token 배열형태로 저장
+                    for (let i = 0; i < results.length; i++) {
+                        target_tokens[i] = results[i].Token;
+                    }
+
+
+                    //해당되는 Token이 없다면 return
+                    if (target_tokens == 0) {
+                        console.log("[FCM] No push request (" + id + ")");
+                        return
+                    } else {
+                        console.log("[FCM] Push Sent");
+                        console.log("[FCM] " + target_tokens);
+
+                        connection.query(`SELECT device_type FROM deviceStatus WHERE id = ?;`, [id], function (error, results) {
+                            if (results[0].device_type == "WASH") {
+                                //FCM 메시지 내용
+                                let message = {
+                                    notification: {
+                                        title: '세탁기 알림',
+                                        body: `${id}번 세탁기의 동작이 완료되었습니다.\r\n동작시간 : ${hour_diff}시간 ${minute_diff}분 ${second_diff}초`,
+                                    },
+                                    tokens: target_tokens,
+                                    android: {
+                                        priority: "high"
+                                    },
+                                    apns: {
+                                        payload: {
+                                            aps: {
+                                                contentAvailable: true,
+                                            }
+                                        }
+                                    }
+                                }
+
+                                //FCM 메시지 보내기
+                                fcm.messaging().sendMulticast(message)
+                                    .then((response) => {
+                                        if (response.failureCount > 0) {
+                                            const failedTokens = [];
+                                            response.responses.forEach((resp, idx) => {
+                                                if (!resp.success) {
+                                                    failedTokens.push(target_tokens[idx]);
+                                                }
+                                            });
+                                            console.log('[FCM] Failed Token: ' + failedTokens);
+                                        }
+                                        //console.log('FCM Success')
+                                        return
+                                    });
+                            } else if (results[0].device_type == "DRY") {
+                                //FCM 메시지 내용
+                                let message = {
+                                    notification: {
+                                        title: '건조기 알림',
+                                        body: `${id}번 건조기의 동작이 완료되었습니다.\r\n동작시간 : ${hour_diff}시간 ${minute_diff}분 ${second_diff}초`,
+                                    },
+                                    tokens: target_tokens,
+                                    android: {
+                                        priority: "high"
+                                    },
+                                    apns: {
+                                        payload: {
+                                            aps: {
+                                                contentAvailable: true,
+                                            }
+                                        }
+                                    }
+                                }
+
+                                //FCM 메시지 보내기
+                                fcm.messaging().sendMulticast(message)
+                                    .then((response) => {
+                                        if (response.failureCount > 0) {
+                                            const failedTokens = [];
+                                            response.responses.forEach((resp, idx) => {
+                                                if (!resp.success) {
+                                                    failedTokens.push(target_tokens[idx]);
+                                                }
+                                            });
+                                            console.log('[FCM] Failed Token:' + failedTokens);
+                                        }
+                                        //console.log('FCM Success')
+                                        return
+                                    });
+
+                            }
+                        });
+
+                    }
+                });
+
+                //FCM 메시지 보낸 Token 제거
+                connection.query(`DELETE FROM PushAlert WHERE device_id = ? AND Expect_Status = ?;`, [id, state], function (error, results) {
+                    if (error) {
+                        console.log('DELETE Token query error:');
+                        console.log(error);
+                        return;
+                    }
+                    //console.log(results);
+                });
+            })
+        });
+    }
+
+}
