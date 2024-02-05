@@ -101,7 +101,7 @@ client.on('ready', (c) => {
 
 client.login(credential.discord_token);
 
-app.on('upgrade', function upgrade(request, socket, head) {
+https.on('upgrade', function upgrade(request, socket, head) {
     const { pathname } = url.parse(request.url);
     const user = auth(request);
     if (pathname === '/client') {
