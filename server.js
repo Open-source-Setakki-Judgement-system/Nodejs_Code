@@ -142,9 +142,9 @@ DeviceSocket.on('connection', (ws, request) => {//장치 Websocket
     }
 
     ws.on('message', (msg) => {
-        const {id, state} = msg;
-        console.log("[Device] "+id+" "+state);
-        StatusUpdate(id,state)
+        const device_data = JSON.parse(msg)
+        console.log("[Device] ID: " + device_data.id + " Status: " + device_data.state)
+        StatusUpdate(device_data.id,device_data.state)
         ClientSocket.clients.forEach(function (client) {
             client.send(msg.toString());
         });
