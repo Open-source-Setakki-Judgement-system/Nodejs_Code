@@ -322,7 +322,7 @@ function StatusUpdate(id,state) {
     });
 
     //Application과 Frontend에 현재 상태 DB 넘기기
-    connection.query(`SELECT * FROM deviceStatus WHERE device_id = ?;`, [id],function (error, results) {
+    connection.query(`SELECT * FROM deviceStatus WHERE id = ?;`, [id],function (error, results) {
         if (error) {
             console.log('SELECT * FROM deviceStatus query error:');
             console.log(error);
