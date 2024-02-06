@@ -62,6 +62,8 @@ const DeviceSocket = new wsModule.Server(
     }
 );
 
+var ConnectedDevice = [];
+
 function heartbeat() {
     this.isAlive = true;
 }
@@ -113,8 +115,15 @@ https.on('upgrade', function upgrade(request, socket, head) {
         if (!user || user.name !== credential.auth_name || user.pass !== credential.auth_pw) {
             socket.destroy();
         } else {
-            console.log(request.headers)
             console.log(`[Device][Connected] [${request.headers['sec-websocket-key']},${request.headers['hwid']},${request.headers['ch1']},${request.headers['ch2']}]`);
+            const channel = client.channels.cache.get(credential.discord_channelid);
+            channel.send(`장치가 연결되었습니다. [${request.headers['sec-websocket-key']},HWID : "${request.headers['hwid']}" CH1 : "${request.headers['ch1']}" CH2 : "${request.headers['ch2']}"]`);
+            let DeviceObject = new Object();
+            DeviceObject.ws_key = request.headers['sec-websocket-key'];
+            DeviceObject.hwid = request.headers['hwid'];
+            DeviceObject.ch1 = request.headers['ch1'];
+            DeviceObject.ch2 = request.headers['ch2'];
+            ConnectedDevice.push(DeviceObject);
             DeviceSocket.handleUpgrade(request, socket, head, function done(ws) {
                 DeviceSocket.emit('connection', ws, request);
             });
@@ -148,7 +157,10 @@ DeviceSocket.on('connection', (ws, request) => {//장치 Websocket
     })
 
     ws.on('close', () => {
-        console.log(`[Device] [${request.headers['sec-websocket-key']}] Closed.`);
+        console.log(`[Device][Disconnected] [${request.headers['sec-websocket-key']}]`);
+        const channel = client.channels.cache.get(credential.discord_channelid);
+        channel.send(`장치의 연결이 끊어졌습니다. [${request.headers['sec-websocket-key']} HWID : "${request.headers['hwid']}" CH1 : "${request.headers['ch1']}" CH2 : "${request.headers['ch2']}"]<@&${discord_roleid}>`);
+        ConnectedDevice.splice(ConnectedDevice.findIndex(obj => obj.ws_key == request.headers['sec-websocket-key']), 1);
     })
 });
 
@@ -257,32 +269,6 @@ app.post("/push_cancel", (req, res) => {//알림 취소 기능
     });
 
 });
-
-//Socket.io-Gateway
-
-// io.on('connection', socket => {
-//     console.log('[Socket.IO] Embedded device Connected:', socket.id)
-
-//     //Gateway에서 update_state 받으면
-//     socket.on('update_state', state_data => {
-//         const { id, state, alive } = state_data;
-//         console.log("[Device] ID: " + id + " Status: " + state)
-//         connection.query(`UPDATE deviceStatus SET heartbeat = ? WHERE id = ?;`, [moment().format(), id], (error, results) => {
-//             if (error) {
-//                 console.log('deviceStatus Update query error:');
-//                 console.log(error);
-//                 return;
-//             }
-//             //console.log(results);
-//         });
-//         if (state != '2') {//생존신호
-//             StatusUpdate(id,state)
-//         }
-//     })
-//     socket.on('disconnect', function() {
-//         console.log('[Socket.IO] Embedded device Disconnected:', socket.id)
-//     })
-// })
 
 http.listen(http_port, () => {
     console.log(`Listening to port ${http_port}`)
