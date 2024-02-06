@@ -117,7 +117,7 @@ https.on('upgrade', function upgrade(request, socket, head) {
         } else {
             console.log(`[Device][Connected] [${request.headers['sec-websocket-key']},${request.headers['hwid']},${request.headers['ch1']},${request.headers['ch2']}]`);
             const channel = client.channels.cache.get(credential.discord_channelid);
-            channel.send(`장치가 연결되었습니다. [${request.headers['sec-websocket-key']},HWID : "${request.headers['hwid']}" CH1 : "${request.headers['ch1']}" CH2 : "${request.headers['ch2']}"]`);
+            channel.send(`장치가 연결되었습니다. [${request.headers['sec-websocket-key']}, HWID : "${request.headers['hwid']}", CH1 : "${request.headers['ch1']}", CH2 : "${request.headers['ch2']}"]`);
             let DeviceObject = new Object();
             DeviceObject.ws_key = request.headers['sec-websocket-key'];
             DeviceObject.hwid = request.headers['hwid'];
@@ -159,7 +159,7 @@ DeviceSocket.on('connection', (ws, request) => {//장치 Websocket
     ws.on('close', () => {
         console.log(`[Device][Disconnected] [${request.headers['sec-websocket-key']}]`);
         const channel = client.channels.cache.get(credential.discord_channelid);
-        channel.send(`장치의 연결이 끊어졌습니다. [${request.headers['sec-websocket-key']} HWID : "${request.headers['hwid']}" CH1 : "${request.headers['ch1']}" CH2 : "${request.headers['ch2']}"]<@&${discord_roleid}>`);
+        channel.send(`장치의 연결이 끊어졌습니다. [${request.headers['sec-websocket-key']}, HWID : "${request.headers['hwid']}", CH1 : "${request.headers['ch1']}", CH2 : "${request.headers['ch2']}"]<@&${credential.discord_roleid}>`);
         ConnectedDevice.splice(ConnectedDevice.findIndex(obj => obj.ws_key == request.headers['sec-websocket-key']), 1);
     })
 });
