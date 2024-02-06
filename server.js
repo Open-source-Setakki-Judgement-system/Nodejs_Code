@@ -26,10 +26,10 @@ const app = express()
 app.use(cors({
     origin: '*',
 }));
-app.use(rateLimit({ 
-    windowMs: 1*60*1000, 
-    max: 100 
-    })
+app.use(rateLimit({
+    windowMs: 1 * 60 * 1000,
+    max: 100
+})
 );
 app.set('trust proxy', 1)
 app.use(bodyParser.urlencoded({ extended: false }));
@@ -92,7 +92,7 @@ client.on('interactionCreate', (interaction) => {
         const device_no = interaction.options.get('first-number').value;
         const device_status = interaction.options.get('second-number').value;
         console.log("[Discord] Status Updated Device_NO:" + device_no + " Data:" + device_status);
-        StatusUpdate(device_no,device_status)
+        StatusUpdate(device_no, device_status)
         return interaction.reply('OK');
     }
 });
@@ -110,8 +110,7 @@ https.on('upgrade', function upgrade(request, socket, head) {
         ClientSocket.handleUpgrade(request, socket, head, function done(ws) {
             ClientSocket.emit('connection', ws, request);
         });
-    } else if(pathname === '/device')
-    {
+    } else if (pathname === '/device') {
         if (!user || user.name !== credential.auth_name || user.pass !== credential.auth_pw) {
             socket.destroy();
         } else {
@@ -153,7 +152,7 @@ DeviceSocket.on('connection', (ws, request) => {//장치 Websocket
     ws.on('message', (msg) => {
         const device_data = JSON.parse(msg)
         console.log("[Device] ID: " + device_data.id + " Status: " + device_data.state)
-        StatusUpdate(device_data.id,device_data.state)
+        StatusUpdate(device_data.id, device_data.state)
     })
 
     ws.on('close', () => {
@@ -161,6 +160,8 @@ DeviceSocket.on('connection', (ws, request) => {//장치 Websocket
         const channel = client.channels.cache.get(credential.discord_channelid);
         channel.send(`장치의 연결이 끊어졌습니다. [${request.headers['sec-websocket-key']}, HWID : "${request.headers['hwid']}", CH1 : "${request.headers['ch1']}", CH2 : "${request.headers['ch2']}"]<@&${credential.discord_roleid}>`);
         ConnectedDevice.splice(ConnectedDevice.findIndex(obj => obj.ws_key == request.headers['sec-websocket-key']), 1);
+        StatusUpdate(request.headers['ch1'], 2)
+        StatusUpdate(request.headers['ch2'], 2)
     })
 });
 
@@ -278,17 +279,19 @@ https.listen(https_port, () => {
     console.log(`Listening to port ${https_port}`)
 })
 
-function StatusUpdate(id,state) {
+function StatusUpdate(id, state) {
     let device_status_str
-    if(state == 1)
-    {
+    if (state == 1) {
         device_status_str = "사용가능"
-    }else if(state == 0){
+    } else if (state == 0) {
         device_status_str = "작동중"
     }
+    else if (state == 2) {
+        device_status_str = "연결 끊어짐"
+    }
     const channel = client.channels.cache.get(credential.discord_channelid);
-    channel.send(`${id}번 기기의 상태가 ${device_status_str}으로 변경되었습니다.`);
-    //Gateway에서 Socket.io로 넘어온 값 DB에 넣기
+    channel.send(`${id}번 기기의 상태가 "${device_status_str}"으로 변경되었습니다.`);
+    //기기상태 DB 업데이트
     connection.query(`UPDATE deviceStatus SET state = ? WHERE id = ?;`, [state, id], (error, results) => {
         if (error) {
             console.log('deviceStatus Update query error:');
@@ -297,7 +300,7 @@ function StatusUpdate(id,state) {
         }
         //console.log(results);
     });
-
+    //푸시알림 DB 업데이트
     connection.query(`UPDATE PushAlert SET state = ? WHERE device_id = ?;`, [state, id], (error, results) => {
         if (error) {
             console.log('deviceStatus Update query error:');
@@ -308,7 +311,7 @@ function StatusUpdate(id,state) {
     });
 
     //Application과 Frontend에 현재 상태 DB 넘기기
-    connection.query(`SELECT * FROM deviceStatus WHERE id = ?;`, [id],function (error, results) {
+    connection.query(`SELECT * FROM deviceStatus WHERE id = ?;`, [id], function (error, results) {
         if (error) {
             console.log('SELECT * FROM deviceStatus query error:');
             console.log(error);
@@ -329,7 +332,7 @@ function StatusUpdate(id,state) {
             }
             //console.log(results);
         });
-    } else {//OFF
+    } else if (state == 1) {//OFF
         connection.query(`UPDATE deviceStatus SET OFF_time = ? WHERE id = ?;`, [moment().format(), id], (error, results) => {
             if (error) {
                 console.log('deviceStatus Update query error:');
@@ -348,7 +351,7 @@ function StatusUpdate(id,state) {
                 let second_diff = moment(results[0].OFF_time).diff(results[0].ON_time, 'seconds') - (minute_diff * 60) - (hour_diff * 3600)
                 console.log("[Device] Time " + hour_diff + "/" + minute_diff + "/" + second_diff)
 
-                //Gateway에서 Socket.io로 넘어온 값에 등록된 Token 조회해서 FCM 보내기
+                //알림신청 Token 조회해서 FCM 메시지 보내기
                 connection.query(`SELECT Token FROM PushAlert WHERE device_id = ? AND Expect_Status = ?;`, [id, state], function (error, results) {
                     let target_tokens = new Array();
                     if (error) {
@@ -363,7 +366,6 @@ function StatusUpdate(id,state) {
                     for (let i = 0; i < results.length; i++) {
                         target_tokens[i] = results[i].Token;
                     }
-
 
                     //해당되는 Token이 없다면 return
                     if (target_tokens == 0) {
