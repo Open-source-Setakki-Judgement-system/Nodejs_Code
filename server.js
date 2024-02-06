@@ -135,7 +135,7 @@ https.on('upgrade', function upgrade(request, socket, head) {
 
 ClientSocket.on('connection', (ws, request) => {//클라이언트 Websocket
     if (ws.readyState === ws.OPEN) {
-        ws.send(`Hello From Server`);
+        //ws.send(`Hello From Server`);
     }
     ws.on('close', () => {
         //console.log(`Websocket[${request.headers['sec-websocket-key']}] closed`);
