@@ -97,13 +97,18 @@ client.on('interactionCreate', (interaction) => {
         return interaction.reply('OK');
     }
     if (interaction.commandName === '연결목록') {
-        var table = new AsciiTable3('임베디드 장치 연결 목록')
-            .setHeading('WebSocket Key', 'HWID', 'CH1', 'CH2')
-            .setAligns(AlignmentEnum.LEFT)
-        for (let i = 0; i < ConnectedDevice.length; i++) {
-            table.addRow(ConnectedDevice[i].ws_key, ConnectedDevice[i].hwid, ConnectedDevice[i].ch1, ConnectedDevice[i].ch2)
+        if (ConnectedDevice.length == 0) {
+            return interaction.reply("연결된 장치가 없습니다.");
         }
-        return interaction.reply(table.toString());
+        else {
+            var table = new AsciiTable3('임베디드 장치 연결 목록')
+                .setHeading('WebSocket Key', 'HWID', 'CH1', 'CH2')
+                .setAligns(AlignmentEnum.LEFT)
+            for (let i = 0; i < ConnectedDevice.length; i++) {
+                table.addRow(ConnectedDevice[i].ws_key, ConnectedDevice[i].hwid, ConnectedDevice[i].ch1, ConnectedDevice[i].ch2)
+            }
+            return interaction.reply(table.toString());
+        }
     }
 });
 
