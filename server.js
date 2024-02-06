@@ -11,7 +11,7 @@ const bodyParser = require("body-parser");
 const auth = require('basic-auth');
 const rateLimit = require('express-rate-limit');
 const url = require('url');
-const AsciiTable = require('ascii-table3');
+const { AsciiTable3, AlignmentEnum } = require('ascii-table3');
 
 const { Client, IntentsBitField } = require('discord.js');
 const client = new Client({
@@ -97,9 +97,9 @@ client.on('interactionCreate', (interaction) => {
         return interaction.reply('OK');
     }
     if (interaction.commandName === '연결목록') {
-        var table = new AsciiTable('임베디드 장치 연결 목록')
-        table.setHeading('WebSocket Key', 'HWID', 'CH1', 'CH2')
-        table.setAligns(AlignmentEnum.LEFT)
+        var table = new AsciiTable3('임베디드 장치 연결 목록')
+            .setHeading('WebSocket Key', 'HWID', 'CH1', 'CH2')
+            .setAligns(AlignmentEnum.LEFT)
         for (let i = 0; i < ConnectedDevice.length; i++) {
             table.addRow(ConnectedDevice[i].ws_key, ConnectedDevice[i].hwid, ConnectedDevice[i].ch1, ConnectedDevice[i].ch2)
         }
