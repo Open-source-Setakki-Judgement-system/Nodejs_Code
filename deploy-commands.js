@@ -33,6 +33,18 @@ const commands = [
   {
     name: '연결목록',
     description: '연결된 임베디드 장치의 목록을 확인합니다.',
+  },
+  {
+    name: '상태확인',
+    description: '장치의 현재 상태를 확인합니다.',
+    options: [
+      {
+        name: 'first-number',
+        description: '장치의 고유번호 (HWID)',
+        type: ApplicationCommandOptionType.Number,
+        required: true
+      }
+    ]
   }
 ];
 

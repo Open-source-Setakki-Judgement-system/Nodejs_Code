@@ -13,7 +13,7 @@ const rateLimit = require('express-rate-limit');
 const url = require('url');
 const { AsciiTable3, AlignmentEnum } = require('ascii-table3');
 
-const { Client, IntentsBitField } = require('discord.js');
+const { Client, IntentsBitField, EmbedBuilder  } = require('discord.js');
 const client = new Client({
     intents: [
         IntentsBitField.Flags.Guilds,
@@ -102,12 +102,29 @@ client.on('interactionCreate', (interaction) => {
         }
         else {
             var table = new AsciiTable3('임베디드 장치 연결 목록')
-                .setHeading('WebSocket Key', 'HWID', 'CH1', 'CH2')
+                .setHeading('HWID', 'CH1', 'CH2')
                 .setAligns(AlignmentEnum.LEFT)
             for (let i = 0; i < ConnectedDevice.length; i++) {
-                table.addRow(ConnectedDevice[i].ws_key, ConnectedDevice[i].hwid, ConnectedDevice[i].ch1, ConnectedDevice[i].ch2)
+                table.addRow(ConnectedDevice[i].hwid, ConnectedDevice[i].ch1, ConnectedDevice[i].ch2)
             }
             return interaction.reply(table.toString());
+        }
+    }
+    if (interaction.commandName === '상태확인') {
+        const device_no = interaction.options.get('first-number').value;
+        if (ConnectedDevice.length == 0) {
+            return interaction.reply("연결된 장치가 없습니다.");
+        }
+        else {
+            if (ConnectedDevice.findIndex(obj => obj.hwid == device_no) < 0)
+            {
+                return interaction.reply("연결되지 않은 장치입니다");
+            }
+            let DataObject = new Object();
+            DataObject.title = "GetData"
+            DataObject.data = "Status"
+            Sendto(device_no, JSON.stringify(DataObject))
+            return interaction.reply("OK");
         }
     }
 });
@@ -129,15 +146,6 @@ https.on('upgrade', function upgrade(request, socket, head) {
         if (!user || user.name !== credential.auth_name || user.pass !== credential.auth_pw) {
             socket.destroy();
         } else {
-            console.log(`[Device][Connected] [${request.headers['sec-websocket-key']},${request.headers['hwid']},${request.headers['ch1']},${request.headers['ch2']}]`);
-            const channel = client.channels.cache.get(credential.discord_channelid);
-            channel.send(`장치가 연결되었습니다. [${request.headers['sec-websocket-key']}, HWID : "${request.headers['hwid']}", CH1 : "${request.headers['ch1']}", CH2 : "${request.headers['ch2']}"]`);
-            let DeviceObject = new Object();
-            DeviceObject.ws_key = request.headers['sec-websocket-key'];
-            DeviceObject.hwid = request.headers['hwid'];
-            DeviceObject.ch1 = request.headers['ch1'];
-            DeviceObject.ch2 = request.headers['ch2'];
-            ConnectedDevice.push(DeviceObject);
             DeviceSocket.handleUpgrade(request, socket, head, function done(ws) {
                 DeviceSocket.emit('connection', ws, request);
             });
@@ -158,7 +166,15 @@ ClientSocket.on('connection', (ws, request) => {//클라이언트 Websocket
 });
 
 DeviceSocket.on('connection', (ws, request) => {//장치 Websocket
-    //console.log(request.headers);
+    console.log(`[Device][Connected] [${request.headers['hwid']},${request.headers['ch1']},${request.headers['ch2']}]`);
+    const channel = client.channels.cache.get(credential.discord_channelid);
+    channel.send(`장치가 연결되었습니다. [HWID : "${request.headers['hwid']}", CH1 : "${request.headers['ch1']}", CH2 : "${request.headers['ch2']}"]`);
+    let DeviceObject = new Object();
+    DeviceObject.ws = ws;
+    DeviceObject.hwid = request.headers['hwid'];
+    DeviceObject.ch1 = request.headers['ch1'];
+    DeviceObject.ch2 = request.headers['ch2'];
+    ConnectedDevice.push(DeviceObject);
     ws.isAlive = true;
     ws.on('pong', heartbeat);
     if (ws.readyState === ws.OPEN) {
@@ -166,15 +182,38 @@ DeviceSocket.on('connection', (ws, request) => {//장치 Websocket
 
     ws.on('message', (msg) => {
         const device_data = JSON.parse(msg)
-        console.log("[Device] ID: " + device_data.id + " Status: " + device_data.state)
-        StatusUpdate(device_data.id, device_data.state)
+        if (device_data.title == "Update") {
+            console.log("[Device][Update] ID: " + device_data.id + " Status: " + device_data.state)
+            StatusUpdate(device_data.id, device_data.state)
+        } else if (device_data.title == "GetData") {
+            const deviceData = new EmbedBuilder()
+                .setColor(0x0099FF)
+                .setTitle(`고유번호 ${request.headers['hwid']}번 기기 보고`)
+                .setDescription(`${request.headers['hwid']}번 기기의 현재 정보입니다.`)
+                .addFields(
+                    //추가예정
+                    { name: 'CH1_동작상태', value: `${device_data.ch1_status}`, inline: true  },
+                    { name: 'CH2_동작상태', value: `${device_data.ch2_status}`, inline: true  },
+                    { name: '\u200B'},
+                    { name: 'CH1 전류센서', value: `${device_data.ch1_current}`, inline: true },
+                    { name: 'CH1 유량센서', value: `${device_data.ch1_flow}`, inline: true },
+                    { name: 'CH1 배수센서', value: `${device_data.ch1_drain}`, inline: true },
+                    { name: '\u200B'},
+                    { name: 'CH2 전류센서', value: `${device_data.ch2_current}`, inline: true },
+                    { name: 'CH2 유량센서', value: `${device_data.ch2_flow}`, inline: true },
+                    { name: 'CH2 배수센서', value: `${device_data.ch2_drain}`, inline: true },
+                )
+                .setTimestamp()
+            const channel = client.channels.cache.get(credential.discord_channelid);
+            channel.send({ embeds: [deviceData] });
+        }
     })
 
     ws.on('close', () => {
-        console.log(`[Device][Disconnected] [${request.headers['sec-websocket-key']}]`);
         const channel = client.channels.cache.get(credential.discord_channelid);
-        channel.send(`장치의 연결이 끊어졌습니다. [${request.headers['sec-websocket-key']}, HWID : "${request.headers['hwid']}", CH1 : "${request.headers['ch1']}", CH2 : "${request.headers['ch2']}"]<@&${credential.discord_roleid}>`);
-        ConnectedDevice.splice(ConnectedDevice.findIndex(obj => obj.ws_key == request.headers['sec-websocket-key']), 1);
+        channel.send(`장치의 연결이 끊어졌습니다. [HWID : "${request.headers['hwid']}", CH1 : "${request.headers['ch1']}", CH2 : "${request.headers['ch2']}"]<@&${credential.discord_roleid}>`);
+        console.log(`[Device][Disconnected] [${request.headers['hwid']},${request.headers['ch1']},${request.headers['ch2']}]`);
+        ConnectedDevice.splice(ConnectedDevice.findIndex(obj => obj.hwid == request.headers['hwid']), 1);
         StatusUpdate(request.headers['ch1'], 2)
         StatusUpdate(request.headers['ch2'], 2)
     })
@@ -293,6 +332,13 @@ http.listen(http_port, () => {
 https.listen(https_port, () => {
     console.log(`Listening to port ${https_port}`)
 })
+
+function Sendto(HWID, data) {
+    const arr_index = ConnectedDevice.findIndex(obj => obj.hwid == HWID)
+    console.log(arr_index)
+    if(arr_index >= 0 && ConnectedDevice[arr_index].ws && ConnectedDevice[arr_index].ws.readyState === ConnectedDevice[arr_index].ws.OPEN)
+    ConnectedDevice[arr_index].ws.send(data);
+}
 
 function StatusUpdate(id, state) {
     let device_status_str
