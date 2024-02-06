@@ -192,13 +192,13 @@ DeviceSocket.on('connection', (ws, request) => {//장치 Websocket
                 .setDescription(`${request.headers['hwid']}번 기기의 현재 정보입니다.`)
                 .addFields(
                     //추가예정
-                    { name: 'CH1_동작상태', value: `${device_data.ch1_status}`, inline: true  },
-                    { name: 'CH2_동작상태', value: `${device_data.ch2_status}`, inline: true  },
-                    { name: '\u200B'},
+                    { name: 'CH1_동작상태', value: `${device_data.ch1_status}`, inline: true },
+                    { name: 'CH2_동작상태', value: `${device_data.ch2_status}`, inline: true },
+                    { name: '\u200B', value: '\u200B' },
                     { name: 'CH1 전류센서', value: `${device_data.ch1_current}`, inline: true },
                     { name: 'CH1 유량센서', value: `${device_data.ch1_flow}`, inline: true },
                     { name: 'CH1 배수센서', value: `${device_data.ch1_drain}`, inline: true },
-                    { name: '\u200B'},
+                    { name: '\u200B', value: '\u200B' },
                     { name: 'CH2 전류센서', value: `${device_data.ch2_current}`, inline: true },
                     { name: 'CH2 유량센서', value: `${device_data.ch2_flow}`, inline: true },
                     { name: 'CH2 배수센서', value: `${device_data.ch2_drain}`, inline: true },
