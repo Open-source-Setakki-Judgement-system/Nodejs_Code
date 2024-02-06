@@ -318,7 +318,7 @@ function StatusUpdate(id, state) {
             return;
         }
         ClientSocket.clients.forEach(function (client) {
-            client.send(JSON.stringify(results));
+            client.send(JSON.stringify(results[0]));
         });
     });
 
