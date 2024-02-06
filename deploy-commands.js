@@ -6,29 +6,33 @@ const commands = [
     name: '상태변경',
     description: '장치의 상태를 변경합니다.',
     options: [
-        {
-            name:'first-number',
-            description:'세탁기/건조기의 번호',
-            type: ApplicationCommandOptionType.Number,
-            required: true
-        },
-        {
-            name:'second-number',
-            description:'변경할 세탁기/건조기의 상태',
-            type: ApplicationCommandOptionType.Number,
-            choices: [
-                {
-                    name: '작동중',
-                    value: 0
-                },
-                {
-                    name: '사용가능',
-                    value: 1
-                }
-            ],
-            required: true
-        }
+      {
+        name: 'first-number',
+        description: '세탁기/건조기의 번호',
+        type: ApplicationCommandOptionType.Number,
+        required: true
+      },
+      {
+        name: 'second-number',
+        description: '변경할 세탁기/건조기의 상태',
+        type: ApplicationCommandOptionType.Number,
+        choices: [
+          {
+            name: '작동중',
+            value: 0
+          },
+          {
+            name: '사용가능',
+            value: 1
+          }
+        ],
+        required: true
+      }
     ]
+  },
+  {
+    name: '연결목록',
+    description: '연결된 임베디드 장치의 목록을 확인합니다.',
   }
 ];
 
