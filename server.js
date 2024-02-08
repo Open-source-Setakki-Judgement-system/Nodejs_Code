@@ -118,7 +118,7 @@ client.on('interactionCreate', (interaction) => {
         else {
             if (ConnectedDevice.findIndex(obj => obj.hwid == device_no) < 0)
             {
-                return interaction.reply("연결되지 않은 장치입니다");
+                return interaction.reply("연결되지 않은 장치입니다.");
             }
             let DataObject = new Object();
             DataObject.title = "GetData"
@@ -157,11 +157,13 @@ https.on('upgrade', function upgrade(request, socket, head) {
 });
 
 ClientSocket.on('connection', (ws, request) => {//클라이언트 Websocket
+    ws.isAlive = true;
+    ws.on('pong', heartbeat);
     if (ws.readyState === ws.OPEN) {
         //ws.send(`Hello From Server`);
     }
     ws.on('close', () => {
-        //console.log(`Websocket[${request.headers['sec-websocket-key']}] closed`);
+        //console.log(`Client [${request.headers['sec-websocket-key']}] closed`);
     })
 });
 
@@ -219,14 +221,21 @@ DeviceSocket.on('connection', (ws, request) => {//장치 Websocket
     })
 });
 
-const interval = setInterval(function ping() {//장치 Heartbeat
+const device_Pinginterval = setInterval(function ping() {//장치 Heartbeat
     DeviceSocket.clients.forEach(function each(ws) {
         if (ws.isAlive === false) return ws.terminate();
-        console.log("ping");
         ws.isAlive = false;
         ws.ping();
     });
 }, 20000);
+
+const client_Pinginterval = setInterval(function ping() {//클라이언트 Heartbeat
+    ClientSocket.clients.forEach(function each(ws) {
+        if (ws.isAlive === false) return ws.terminate();
+        ws.isAlive = false;
+        ws.ping();
+    });
+}, 50000);
 
 app.get('/', (req, res) => {
     res.sendStatus(200)
