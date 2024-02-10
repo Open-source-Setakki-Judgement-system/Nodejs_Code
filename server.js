@@ -188,16 +188,18 @@ DeviceSocket.on('connection', (ws, request) => {//장치 Websocket
             console.log("[Device][Update] ID: " + device_data.id + " Status: " + device_data.state)
             StatusUpdate(device_data.id, device_data.state)
         } else if (device_data.title == "GetData") {
+            device_data.ch1_current = device_data.ch1_current.toFixed(2)
+            device_data.ch2_current = device_data.ch2_current.toFixed(2)
             const deviceData = new EmbedBuilder()
                 .setColor(0x0099FF)
                 .setTitle(`고유번호 ${request.headers['hwid']}번 기기 보고`)
                 .setDescription(`${request.headers['hwid']}번 기기의 현재 정보입니다.`)
                 .addFields(
-                    { name: 'CH1', value: `장치번호 : ${device_data.ch1_deviceno}\n모드 : ${device_data.ch1_mode}\n동작상태 : ${device_data.ch1_status.toFixed(2)}\n
+                    { name: 'CH1', value: `장치번호 : ${device_data.ch1_deviceno}\n모드 : ${device_data.ch1_mode}\n동작상태 : ${device_data.ch1_status}\n
                     전류 : ${device_data.ch1_current}A\n유량 : ${device_data.ch1_flow}\n 배수 : ${device_data.ch1_drain}\n
                     세탁기 동작조건\n지연시간 : ${device_data.CH1_EndDelay_W}\n전류 : ${device_data.CH1_Curr_W}\n 유량 : ${device_data.CH1_Flow_W}\n
                     건조기 동작조건\n지연시간 : ${device_data.CH1_EndDelay_D}\n건조기-전류 : ${device_data.CH1_Curr_D}`, inline: true },
-                    { name: 'CH2', value: `장치번호 : ${device_data.ch2_deviceno}\n모드 : ${device_data.ch2_mode}\n동작상태 : ${device_data.ch2_status.toFixed(2)}\n
+                    { name: 'CH2', value: `장치번호 : ${device_data.ch2_deviceno}\n모드 : ${device_data.ch2_mode}\n동작상태 : ${device_data.ch2_status}\n
                     전류 : ${device_data.ch2_current}A\n유량 : ${device_data.ch2_flow}\n 배수 : ${device_data.ch2_drain}\n
                     세탁기 동작조건\n지연시간 : ${device_data.CH2_EndDelay_W}\n전류 : ${device_data.CH2_Curr_W}\n 유량 : ${device_data.CH2_Flow_W}\n
                     건조기 동작조건\n지연시간 : ${device_data.CH2_EndDelay_D}\n건조기-전류 : ${device_data.CH2_Curr_D}`, inline: true },
