@@ -190,6 +190,10 @@ DeviceSocket.on('connection', (ws, request) => {//장치 Websocket
         } else if (device_data.title == "GetData") {
             device_data.ch1_current = device_data.ch1_current.toFixed(2)
             device_data.ch2_current = device_data.ch2_current.toFixed(2)
+            device_data.CH1_Curr_W = device_data.CH1_Curr_W.toFixed(3)
+            device_data.CH1_Curr_D = device_data.CH1_Curr_D.toFixed(3)
+            device_data.CH2_Curr_W = device_data.CH2_Curr_W.toFixed(3)
+            device_data.CH2_Curr_D = device_data.CH2_Curr_D.toFixed(3)
             const deviceData = new EmbedBuilder()
                 .setColor(0x0099FF)
                 .setTitle(`고유번호 ${request.headers['hwid']}번 기기 보고`)
@@ -197,12 +201,12 @@ DeviceSocket.on('connection', (ws, request) => {//장치 Websocket
                 .addFields(
                     { name: 'CH1', value: `장치번호 : ${device_data.ch1_deviceno}\n모드 : ${device_data.ch1_mode}\n동작상태 : ${device_data.ch1_status}\n
                     전류 : ${device_data.ch1_current}A\n유량 : ${device_data.ch1_flow}\n 배수 : ${device_data.ch1_drain}\n
-                    세탁기 동작조건\n지연시간 : ${device_data.CH1_EndDelay_W}\n전류 : ${device_data.CH1_Curr_W}\n 유량 : ${device_data.CH1_Flow_W}\n
-                    건조기 동작조건\n지연시간 : ${device_data.CH1_EndDelay_D}\n건조기-전류 : ${device_data.CH1_Curr_D}`, inline: true },
+                    세탁기 동작조건\n지연시간 : ${device_data.CH1_EndDelay_W}\n전류 : ${device_data.CH1_Curr_W}A\n 유량 : ${device_data.CH1_Flow_W}\n
+                    건조기 동작조건\n지연시간 : ${device_data.CH1_EndDelay_D}\n전류 : ${device_data.CH1_Curr_D}A`, inline: true },
                     { name: 'CH2', value: `장치번호 : ${device_data.ch2_deviceno}\n모드 : ${device_data.ch2_mode}\n동작상태 : ${device_data.ch2_status}\n
                     전류 : ${device_data.ch2_current}A\n유량 : ${device_data.ch2_flow}\n 배수 : ${device_data.ch2_drain}\n
-                    세탁기 동작조건\n지연시간 : ${device_data.CH2_EndDelay_W}\n전류 : ${device_data.CH2_Curr_W}\n 유량 : ${device_data.CH2_Flow_W}\n
-                    건조기 동작조건\n지연시간 : ${device_data.CH2_EndDelay_D}\n건조기-전류 : ${device_data.CH2_Curr_D}`, inline: true },
+                    세탁기 동작조건\n지연시간 : ${device_data.CH2_EndDelay_W}\n전류 : ${device_data.CH2_Curr_W}A\n 유량 : ${device_data.CH2_Flow_W}\n
+                    건조기 동작조건\n지연시간 : ${device_data.CH2_EndDelay_D}\n전류 : ${device_data.CH2_Curr_D}A`, inline: true },
                     { name: '\u200B', value: '\u200B' },
                     { name: '네트워크', value: `SSID : ${device_data.wifi_ssid}\nLocal IP : ${device_data.wifi_ip}\nRSSI : ${device_data.wifi_rssi}\nMAC : ${device_data.mac}`, inline: true },
                 )
