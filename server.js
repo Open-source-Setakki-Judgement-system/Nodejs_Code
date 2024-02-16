@@ -197,7 +197,7 @@ DeviceSocket.on('connection', (ws, request) => {//장치 Websocket
             const deviceData = new EmbedBuilder()
                 .setColor(0x0099FF)
                 .setTitle(`고유번호 ${request.headers['hwid']}번 기기 보고`)
-                .setDescription(`FW_VER : ${request.headers['fw_ver']}`)
+                .setDescription(`FW_VER : ${device_data.fw_ver}`)
                 .addFields(
                     { name: 'CH1', value: `장치번호 : ${device_data.ch1_deviceno}\n모드 : ${device_data.ch1_mode}\n동작상태 : ${device_data.ch1_status}\n
                     전류 : ${device_data.ch1_current}A\n유량 : ${device_data.ch1_flow}\n 배수 : ${device_data.ch1_drain}\n
