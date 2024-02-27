@@ -153,9 +153,9 @@ https.on('upgrade', function upgrade(request, socket, head) {
                 DeviceSocket.emit('connection', ws, request);
             });
         }
-    }
+    } 
     else {
-        socket.destroy();
+        io.attach(https).of('/application').emit('connection', socket, head);
     }
 });
 
