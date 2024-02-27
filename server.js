@@ -155,7 +155,9 @@ https.on('upgrade', function upgrade(request, socket, head) {
         }
     } 
     else {
-        io.attach(https).of('/application').emit('connection', socket, head);
+        io.engine.ws.handleUpgrade(request, socket, head, ws => {
+            io.engine.ws.emit('connection', ws, request);
+        });
     }
 });
 
