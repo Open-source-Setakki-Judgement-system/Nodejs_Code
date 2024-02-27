@@ -155,9 +155,7 @@ https.on('upgrade', function upgrade(request, socket, head) {
         }
     } 
     else {
-        io.engine.ws.handleUpgrade(request, socket, head, ws => {
-            io.engine.ws.emit('connection', ws, request);
-        });
+        //Socket.IO로 임시로 연결
     }
 });
 
