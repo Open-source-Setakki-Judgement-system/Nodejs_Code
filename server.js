@@ -342,6 +342,10 @@ app.post("/push_cancel", (req, res) => {//알림 취소 기능
 
 });
 
+io.on('connection', socket => {
+    console.log('[Socket.IO] Embedded device Connected:', socket.id)
+})
+
 application.on('connection', socket => {
     console.log('[Socket.IO] Client Connected:', socket.id)
 
