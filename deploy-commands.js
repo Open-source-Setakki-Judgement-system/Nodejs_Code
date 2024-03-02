@@ -3,6 +3,34 @@ const { REST, Routes, ApplicationCommandOptionType } = require('discord.js');
 
 const commands = [
   {
+    name: '앱버전',
+    description: '안드로이드/IOS 앱의 최신 버전을 변경합니다.(업데이트 알림)',
+    options: [
+      {
+        name: 'first-number',
+        description: '안드로이드/IOS',
+        type: ApplicationCommandOptionType.Number,
+        choices: [
+          {
+            name: 'Andriod',
+            value: 0
+          },
+          {
+            name: 'IOS',
+            value: 1
+          }
+        ],
+        required: true
+      },
+      {
+        name: 'input',
+        description: '앱 버전',
+        type: ApplicationCommandOptionType.String,
+        required: true
+      }
+    ]
+  },
+  {
     name: '상태변경',
     description: '장치의 상태를 변경합니다.',
     options: [

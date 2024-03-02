@@ -92,6 +92,28 @@ client.on('messageCreate', (message) => {
 client.on('interactionCreate', (interaction) => {
     if (!interaction.isChatInputCommand()) return;
 
+    if (interaction.commandName === '앱버전') {
+        var system
+        if(interaction.options.get('first-number').value == 0)
+        {
+            system = "android";
+        }else
+        {
+            system = "ios";
+        }
+        const version = interaction.options.get('input').value;
+        console.log("[Discord] App Version Changed:" + system + " " + version);
+        connection.query(`UPDATE app_version SET version = ? WHERE os_system = ?;`, [version, system], (error, results) => {
+            if (error) {
+                console.log('app_version Update query error:');
+                console.log(error);
+                return;
+            }
+            //console.log(results);
+        });
+        return interaction.reply('앱 버전이 변경되었습니다.');
+    }
+
     if (interaction.commandName === '상태변경') {
         const device_no = interaction.options.get('first-number').value;
         const device_status = interaction.options.get('second-number').value;
@@ -257,6 +279,30 @@ app.get("/device_list", (req, res) => {//장치 목록
             return;
         }
         res.send(results)
+        //console.log('==============================================')
+    });
+});
+
+app.get("/app_ver_android", (req, res) => {//앱 버전
+    connection.query(`SELECT version FROM app_version WHERE os_system = "android";`, function (error, results) {
+        if (error) {
+            console.log('SELECT version FROM app_version query error:');
+            console.log(error);
+            return;
+        }
+        res.send(results[0])
+        //console.log('==============================================')
+    });
+});
+
+app.get("/app_ver_ios", (req, res) => {//앱 버전
+    connection.query(`SELECT version FROM app_version WHERE os_system = "ios";`, function (error, results) {
+        if (error) {
+            console.log('SELECT version FROM app_version query error:');
+            console.log(error);
+            return;
+        }
+        res.send(results[0])
         //console.log('==============================================')
     });
 });
