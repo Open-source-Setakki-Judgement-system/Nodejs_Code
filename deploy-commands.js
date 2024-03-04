@@ -52,6 +52,10 @@ const commands = [
           {
             name: '사용가능',
             value: 1
+          },
+          {
+            name: '연결 끊어짐',
+            value: 2
           }
         ],
         required: true

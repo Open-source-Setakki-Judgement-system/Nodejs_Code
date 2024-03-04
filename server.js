@@ -518,6 +518,10 @@ function StatusUpdate(id, state) {
     }
     const channel = client.channels.cache.get(credential.discord_channelid);
     channel.send(`${id}번 기기의 상태가 "${device_status_str}"으로 변경되었습니다.`);
+    if(state == 2)
+    {
+        return;
+    }
     //기기상태 DB 업데이트
     connection.query(`UPDATE deviceStatus SET state = ? WHERE id = ?;`, [state, id], (error, results) => {
         if (error) {
