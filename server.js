@@ -279,6 +279,10 @@ DeviceSocket.on('connection', (ws, request) => {//장치 Websocket
                 if("END" == keys[keys.length - 1])
                 {
                     console.log("[Device][LogEnd] ID: " + device_data.id)
+                    const end_index = DeviceLog.findIndex(obj => {
+                        return obj.hwid == request.headers['hwid'] && obj.device_num == device_data.id;
+                    });
+                    DeviceLog.splice(end_index, 1);
                     connection.query(`INSERT INTO DeviceLog (HWID, ID, Start_Time, End_Time, Log) VALUES (?, ?, ?, ?, ?);`, [request.headers['hwid'], device_data.id, DeviceLog[index].log.START.local_time, DeviceLog[index].log.END.local_time, JSON.stringify(DeviceLog[index].log)], (error, results) => {
                         if (error) {
                             console.log('deviceStatus Update query error:');
@@ -323,8 +327,21 @@ app.get('/', (req, res) => {
     res.sendStatus(200)
 })
 
+app.get("/get_log", (req, res) => {//장치 목록
+    const num  = req.query.no;
+    connection.query(`SELECT Log FROM DeviceLog WHERE No = ?;`,[num] , function (error, results) {
+        if (error) {
+            console.log('SELECT DeviceLog query error:');
+            console.log(error);
+            return;
+        }
+        res.send(results)
+        //console.log('==============================================')
+    });
+});
+
 app.get("/log_list", (req, res) => {//장치 목록
-    connection.query(`SELECT HWID, ID, Start_Time, End_Time FROM DeviceLog;`, function (error, results) {
+    connection.query(`SELECT No, HWID, ID, Start_Time, End_Time FROM DeviceLog;`, function (error, results) {
         if (error) {
             console.log('SELECT DeviceLog query error:');
             console.log(error);
