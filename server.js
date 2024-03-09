@@ -204,6 +204,7 @@ DeviceSocket.on('connection', (ws, request) => {//장치 Websocket
     const prev_device_index = ConnectedDevice.findIndex((item) => item.hwid == request.headers['hwid']);
     if(prev_device_index != -1)
     {
+        console.log(ConnectedDevice[prev_device_index])
         ConnectedDevice[prev_device_index].ws.close();
     }
     console.log(`[Device][Connected] [${request.headers['hwid']},${request.headers['ch1']},${request.headers['ch2']}]`);
