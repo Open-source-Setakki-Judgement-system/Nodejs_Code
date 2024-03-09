@@ -263,6 +263,7 @@ DeviceSocket.on('connection', (ws, request) => {//장치 Websocket
         } else if (device_data.title == "Log") {
             console.log("[Device][Log] ID: " + device_data.id)
             const Json_Log = JSON.parse(device_data.log);
+            console.log(Json_Log)
             const index = DeviceLog.findIndex(obj => {
                 return obj.hwid == request.headers['hwid'] && obj.device_num == device_data.id;
             });
