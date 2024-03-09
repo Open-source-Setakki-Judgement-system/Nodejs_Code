@@ -193,6 +193,11 @@ ClientSocket.on('connection', (ws, request) => {//클라이언트 Websocket
 });
 
 DeviceSocket.on('connection', (ws, request) => {//장치 Websocket
+    const prev_device_index = data.findIndex((ConnectedDevice) => ConnectedDevice.hwid == request.headers['hwid']);
+    if(prev_device_index != -1)
+    {
+        ConnectedDevice[prev_device_index].ws.close();
+    }
     console.log(`[Device][Connected] [${request.headers['hwid']},${request.headers['ch1']},${request.headers['ch2']}]`);
     const channel = client.channels.cache.get(credential.discord_channelid);
     channel.send(`장치가 연결되었습니다. [HWID : "${request.headers['hwid']}", CH1 : "${request.headers['ch1']}", CH2 : "${request.headers['ch2']}"]`);
@@ -210,7 +215,7 @@ DeviceSocket.on('connection', (ws, request) => {//장치 Websocket
     ws.on('message', (msg) => {
         const device_data = JSON.parse(msg)
         if (device_data.title == "Update") {
-            console.log("[Device][Update] ID: " + device_data.id + " Status: " + device_data.state)
+            console.log("[Device][Update] ID: " + device_data.id + " Status: " + device_data.state + " Log: " + device_data.log)
             StatusUpdate(device_data.id, device_data.state)
         } else if (device_data.title == "GetData") {
             device_data.ch1_current = device_data.ch1_current.toFixed(2)
