@@ -83,6 +83,12 @@ const connection = mysql.createConnection({
     database: credential.mysql_db
 });
 
+client.login(credential.discord_token);
+
+client.on('ready', (c) => {
+    console.log(`${c.user.tag} is online.`);
+});
+
 client.on('messageCreate', (message) => {
     if (message.author.bot) {
         return;
