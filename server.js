@@ -67,6 +67,7 @@ const DeviceSocket = new wsModule.Server(
 );
 
 var ConnectedDevice = [];
+var DeviceLog = [];
 var DiscordConnected = 0;
 
 function heartbeat() {
@@ -204,7 +205,7 @@ DeviceSocket.on('connection', (ws, request) => {//장치 Websocket
     const prev_device_index = ConnectedDevice.findIndex((item) => item.hwid == request.headers['hwid']);
     if(prev_device_index != -1)
     {
-        ConnectedDevice[prev_device_index].ws.terminate();
+        ConnectedDevice[prev_device_index].ws.close();
         ConnectedDevice.splice(prev_device_index, 1);
     }
     console.log(`[Device][Connected] [${request.headers['hwid']},${request.headers['ch1']},${request.headers['ch2']}]`);
@@ -227,7 +228,7 @@ DeviceSocket.on('connection', (ws, request) => {//장치 Websocket
     ws.on('message', (msg) => {
         const device_data = JSON.parse(msg)
         if (device_data.title == "Update") {
-            console.log("[Device][Update] ID: " + device_data.id + " Status: " + device_data.state + " Log: " + device_data.log)
+            console.log("[Device][Update] ID: " + device_data.id + " Status: " + device_data.state)
             StatusUpdate(device_data.id, device_data.state)
         } else if (device_data.title == "GetData") {
             device_data.ch1_current = device_data.ch1_current.toFixed(2)
@@ -241,20 +242,52 @@ DeviceSocket.on('connection', (ws, request) => {//장치 Websocket
                 .setTitle(`고유번호 ${request.headers['hwid']}번 기기 보고`)
                 .setDescription(`FW_VER : ${device_data.fw_ver}`)
                 .addFields(
-                    { name: 'CH1', value: `장치번호 : ${device_data.ch1_deviceno}\n모드 : ${device_data.ch1_mode}\n동작상태 : ${device_data.ch1_status}\n
+                    {
+                        name: 'CH1', value: `장치번호 : ${device_data.ch1_deviceno}\n모드 : ${device_data.ch1_mode}\n동작상태 : ${device_data.ch1_status}\n
                     전류 : ${device_data.ch1_current}A\n유량 : ${device_data.ch1_flow}\n 배수 : ${device_data.ch1_drain}\n
                     세탁기 동작조건\n지연시간 : ${device_data.CH1_EndDelay_W}\n전류 : ${device_data.CH1_Curr_W}A\n 유량 : ${device_data.CH1_Flow_W}\n
-                    건조기 동작조건\n지연시간 : ${device_data.CH1_EndDelay_D}\n전류 : ${device_data.CH1_Curr_D}A`, inline: true },
-                    { name: 'CH2', value: `장치번호 : ${device_data.ch2_deviceno}\n모드 : ${device_data.ch2_mode}\n동작상태 : ${device_data.ch2_status}\n
+                    건조기 동작조건\n지연시간 : ${device_data.CH1_EndDelay_D}\n전류 : ${device_data.CH1_Curr_D}A`, inline: true
+                    },
+                    {
+                        name: 'CH2', value: `장치번호 : ${device_data.ch2_deviceno}\n모드 : ${device_data.ch2_mode}\n동작상태 : ${device_data.ch2_status}\n
                     전류 : ${device_data.ch2_current}A\n유량 : ${device_data.ch2_flow}\n 배수 : ${device_data.ch2_drain}\n
                     세탁기 동작조건\n지연시간 : ${device_data.CH2_EndDelay_W}\n전류 : ${device_data.CH2_Curr_W}A\n 유량 : ${device_data.CH2_Flow_W}\n
-                    건조기 동작조건\n지연시간 : ${device_data.CH2_EndDelay_D}\n전류 : ${device_data.CH2_Curr_D}A`, inline: true },
+                    건조기 동작조건\n지연시간 : ${device_data.CH2_EndDelay_D}\n전류 : ${device_data.CH2_Curr_D}A`, inline: true
+                    },
                     { name: '\u200B', value: '\u200B' },
                     { name: '네트워크', value: `SSID : ${device_data.wifi_ssid}\nLocal IP : ${device_data.wifi_ip}\nRSSI : ${device_data.wifi_rssi}\nMAC : ${device_data.mac}`, inline: true },
                 )
                 .setTimestamp()
             const channel = client.channels.cache.get(credential.discord_channelid);
             channel.send({ embeds: [deviceData] });
+        } else if (device_data.title == "Log") {
+            const index = DeviceLog.findIndex(obj => {
+                return obj.hwid == request.headers['hwid'] && obj.device_num == device_data.id;
+            });
+            if(index == -1)
+            {
+                let LogObject = new Object();
+                LogObject.hwid = request.headers['hwid'];
+                LogObject.device_num = device_data.id;
+                LogObject.log = device_data.log;
+                DeviceLog.push();
+            }else{
+                let jsonMerged = {...DeviceLog[index].log, ...device_data.log}
+                DeviceLog[index].log = jsonMerged;
+                const keys = Object.keys(DeviceLog[index].log);
+                if("END" == keys[keys.length - 1])
+                {
+                    // connection.query(`INSERT INTO DeviceLog (HWID, ID, Time, Log) VALUES (?, ?, ?);`, [request.headers['hwid'], device_data.id, DeviceLog[index].log.END.local_time, DeviceLog[index].log], (error, results) => {
+                    //     if (error) {
+                    //         console.log('deviceStatus Update query error:');
+                    //         console.log(error);
+                    //         return;
+                    //     }
+                    //     //console.log(results);
+                    // });
+                    console.log(DeviceLog[index].log)
+                }
+            }
         }
     })
 
