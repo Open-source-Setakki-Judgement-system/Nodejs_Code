@@ -261,7 +261,8 @@ DeviceSocket.on('connection', (ws, request) => {//장치 Websocket
             const channel = client.channels.cache.get(credential.discord_channelid);
             channel.send({ embeds: [deviceData] });
         } else if (device_data.title == "Log") {
-            console.log("[Device][Log] ID: " + device_data.id ,device_data)
+            console.log("[Device][Log] ID: " + device_data.id)
+            const Json_Log = JSON.parse(device_data.log);
             const index = DeviceLog.findIndex(obj => {
                 return obj.hwid == request.headers['hwid'] && obj.device_num == device_data.id;
             });
@@ -270,10 +271,10 @@ DeviceSocket.on('connection', (ws, request) => {//장치 Websocket
                 let LogObject = new Object();
                 LogObject.hwid = request.headers['hwid'];
                 LogObject.device_num = device_data.id;
-                LogObject.log = device_data.log;
+                LogObject.log = Json_Log;
                 DeviceLog.push(LogObject);
             }else{
-                let jsonMerged = {...DeviceLog[index].log, ...device_data.log}
+                let jsonMerged = {...DeviceLog[index].log, ...Json_Log}
                 DeviceLog[index].log = jsonMerged;
                 if(DeviceLog[index].log.END != undefined)
                 {
