@@ -271,7 +271,7 @@ DeviceSocket.on('connection', (ws, request) => {//장치 Websocket
                 LogObject.hwid = request.headers['hwid'];
                 LogObject.device_num = device_data.id;
                 LogObject.log = device_data.log;
-                DeviceLog.push();
+                DeviceLog.push(LogObject);
             }else{
                 let jsonMerged = {...DeviceLog[index].log, ...device_data.log}
                 DeviceLog[index].log = jsonMerged;
