@@ -277,7 +277,7 @@ DeviceSocket.on('connection', (ws, request) => {//장치 Websocket
             }else{
                 let jsonMerged = {...DeviceLog[index].log, ...Json_Log}
                 DeviceLog[index].log = jsonMerged;
-                if(DeviceLog[index].log.END != undefined)
+                if(DeviceLog[index].log.END.local_time != "")
                 {
                     console.log("[Device][LogEnd] ID: " + device_data.id)
                     const end_index = DeviceLog.findIndex(obj => {
