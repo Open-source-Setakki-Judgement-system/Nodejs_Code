@@ -193,7 +193,7 @@ ClientSocket.on('connection', (ws, request) => {//클라이언트 Websocket
 });
 
 DeviceSocket.on('connection', (ws, request) => {//장치 Websocket
-    const prev_device_index = data.findIndex((ConnectedDevice) => ConnectedDevice.hwid == request.headers['hwid']);
+    const prev_device_index = ConnectedDevice.findIndex((item) => item.hwid == request.headers['hwid']);
     if(prev_device_index != -1)
     {
         ConnectedDevice[prev_device_index].ws.close();
