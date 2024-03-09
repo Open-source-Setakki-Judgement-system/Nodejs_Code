@@ -67,6 +67,7 @@ const DeviceSocket = new wsModule.Server(
 );
 
 var ConnectedDevice = [];
+var DiscordConnected = 0;
 
 function heartbeat() {
     this.isAlive = true;
@@ -87,6 +88,7 @@ client.login(credential.discord_token);
 
 client.on('ready', (c) => {
     console.log(`${c.user.tag} is online.`);
+    DiscordConnected = 1;
 });
 
 client.on('messageCreate', (message) => {
@@ -205,8 +207,11 @@ DeviceSocket.on('connection', (ws, request) => {//장치 Websocket
         ConnectedDevice[prev_device_index].ws.close();
     }
     console.log(`[Device][Connected] [${request.headers['hwid']},${request.headers['ch1']},${request.headers['ch2']}]`);
-    const channel = client.channels.cache.get(credential.discord_channelid);
-    channel.send(`장치가 연결되었습니다. [HWID : "${request.headers['hwid']}", CH1 : "${request.headers['ch1']}", CH2 : "${request.headers['ch2']}"]`);
+    if(DiscordConnected == 1)
+    {
+        const channel = client.channels.cache.get(credential.discord_channelid);
+        channel.send(`장치가 연결되었습니다. [HWID : "${request.headers['hwid']}", CH1 : "${request.headers['ch1']}", CH2 : "${request.headers['ch2']}"]`);
+    }
     let DeviceObject = new Object();
     DeviceObject.ws = ws;
     DeviceObject.hwid = request.headers['hwid'];
