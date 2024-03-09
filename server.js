@@ -261,6 +261,7 @@ DeviceSocket.on('connection', (ws, request) => {//장치 Websocket
             const channel = client.channels.cache.get(credential.discord_channelid);
             channel.send({ embeds: [deviceData] });
         } else if (device_data.title == "Log") {
+            console.log(DeviceLog[index])
             const index = DeviceLog.findIndex(obj => {
                 return obj.hwid == request.headers['hwid'] && obj.device_num == device_data.id;
             });
