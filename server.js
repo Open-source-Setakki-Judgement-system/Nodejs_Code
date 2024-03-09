@@ -277,7 +277,7 @@ DeviceSocket.on('connection', (ws, request) => {//장치 Websocket
                 const keys = Object.keys(DeviceLog[index].log);
                 if("END" == keys[keys.length - 1])
                 {
-                    connection.query(`INSERT INTO DeviceLog (HWID, ID, Start_Time, End_Time, Log) VALUES (?, ?, ?, ?, ?);`, [request.headers['hwid'], device_data.id, DeviceLog[index].log.START.local_time, DeviceLog[index].log.END.local_time, DeviceLog[index].log], (error, results) => {
+                    connection.query(`INSERT INTO DeviceLog (HWID, ID, Start_Time, End_Time, Log) VALUES (?, ?, ?, ?, ?);`, [request.headers['hwid'], device_data.id, DeviceLog[index].log.START.local_time, DeviceLog[index].log.END.local_time, JSON.stringify(DeviceLog[index].log)], (error, results) => {
                         if (error) {
                             console.log('deviceStatus Update query error:');
                             console.log(error);
