@@ -261,6 +261,7 @@ DeviceSocket.on('connection', (ws, request) => {//장치 Websocket
             const channel = client.channels.cache.get(credential.discord_channelid);
             channel.send({ embeds: [deviceData] });
         } else if (device_data.title == "Log") {
+            console.log("[Device][Log] ID: " + device_data.id)
             const index = DeviceLog.findIndex(obj => {
                 return obj.hwid == request.headers['hwid'] && obj.device_num == device_data.id;
             });
@@ -277,6 +278,7 @@ DeviceSocket.on('connection', (ws, request) => {//장치 Websocket
                 const keys = Object.keys(DeviceLog[index].log);
                 if("END" == keys[keys.length - 1])
                 {
+                    console.log("[Device][LogEnd] ID: " + device_data.id)
                     connection.query(`INSERT INTO DeviceLog (HWID, ID, Start_Time, End_Time, Log) VALUES (?, ?, ?, ?, ?);`, [request.headers['hwid'], device_data.id, DeviceLog[index].log.START.local_time, DeviceLog[index].log.END.local_time, JSON.stringify(DeviceLog[index].log)], (error, results) => {
                         if (error) {
                             console.log('deviceStatus Update query error:');
@@ -320,6 +322,18 @@ const client_Pinginterval = setInterval(function ping() {//클라이언트 Heart
 app.get('/', (req, res) => {
     res.sendStatus(200)
 })
+
+app.get("/log_list", (req, res) => {//장치 목록
+    connection.query(`SELECT HWID, ID, Start_Time, End_Time FROM DeviceLog;`, function (error, results) {
+        if (error) {
+            console.log('SELECT DeviceLog query error:');
+            console.log(error);
+            return;
+        }
+        res.send(results)
+        //console.log('==============================================')
+    });
+});
 
 app.get("/device_list", (req, res) => {//장치 목록
     connection.query(`SELECT * FROM deviceStatus;`, function (error, results) {
