@@ -267,33 +267,31 @@ DeviceSocket.on('connection', (ws, request) => {//장치 Websocket
             const index = DeviceLog.findIndex(obj => {
                 return obj.hwid == request.headers['hwid'] && obj.device_num == device_data.id;
             });
-            if(index == -1)
-            {
+            if (index == -1) {
                 let LogObject = new Object();
                 LogObject.hwid = request.headers['hwid'];
                 LogObject.device_num = device_data.id;
                 LogObject.log = Json_Log;
                 DeviceLog.push(LogObject);
-            }else{
-                let jsonMerged = {...DeviceLog[index].log, ...Json_Log}
+            } else {
+                let jsonMerged = { ...DeviceLog[index].log, ...Json_Log }
                 DeviceLog[index].log = jsonMerged;
-                if(DeviceLog[index].log.END.local_time != "")
-                {
-                    console.log("[Device][LogEnd] ID: " + device_data.id)
-                    const end_index = DeviceLog.findIndex(obj => {
-                        return obj.hwid == request.headers['hwid'] && obj.device_num == device_data.id;
-                    });
-                    DeviceLog.splice(end_index, 1);
-                    connection.query(`INSERT INTO DeviceLog (HWID, ID, Start_Time, End_Time, Log) VALUES (?, ?, ?, ?, ?);`, [request.headers['hwid'], device_data.id, DeviceLog[index].log.START.local_time, DeviceLog[index].log.END.local_time, JSON.stringify(DeviceLog[index].log)], (error, results) => {
-                        if (error) {
-                            console.log('deviceStatus Update query error:');
-                            console.log(error);
-                            return;
-                        }
-                        //console.log(results);
-                    });
-                    //console.log(DeviceLog[index].log)
-                }
+            }
+            if (DeviceLog[index].log.END.local_time != "") {
+                console.log("[Device][LogEnd] ID: " + device_data.id)
+                const end_index = DeviceLog.findIndex(obj => {
+                    return obj.hwid == request.headers['hwid'] && obj.device_num == device_data.id;
+                });
+                DeviceLog.splice(end_index, 1);
+                connection.query(`INSERT INTO DeviceLog (HWID, ID, Start_Time, End_Time, Log) VALUES (?, ?, ?, ?, ?);`, [request.headers['hwid'], device_data.id, DeviceLog[index].log.START.local_time, DeviceLog[index].log.END.local_time, JSON.stringify(DeviceLog[index].log)], (error, results) => {
+                    if (error) {
+                        console.log('deviceStatus Update query error:');
+                        console.log(error);
+                        return;
+                    }
+                    //console.log(results);
+                });
+                //console.log(DeviceLog[index].log)
             }
         }
     })
