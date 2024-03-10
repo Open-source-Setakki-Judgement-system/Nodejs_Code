@@ -264,7 +264,7 @@ DeviceSocket.on('connection', (ws, request) => {//장치 Websocket
             console.log("[Device][Log] ID: " + device_data.id)
             const Json_Log = JSON.parse(device_data.log);
             console.log(Json_Log)
-            const index = DeviceLog.findIndex(obj => {
+            var index = DeviceLog.findIndex(obj => {
                 return obj.hwid == request.headers['hwid'] && obj.device_num == device_data.id;
             });
             if (index == -1) {
@@ -273,6 +273,9 @@ DeviceSocket.on('connection', (ws, request) => {//장치 Websocket
                 LogObject.device_num = device_data.id;
                 LogObject.log = Json_Log;
                 DeviceLog.push(LogObject);
+                index = DeviceLog.findIndex(obj => {
+                    return obj.hwid == request.headers['hwid'] && obj.device_num == device_data.id;
+                });
             } else {
                 let jsonMerged = { ...DeviceLog[index].log, ...Json_Log }
                 DeviceLog[index].log = jsonMerged;
@@ -282,14 +285,13 @@ DeviceSocket.on('connection', (ws, request) => {//장치 Websocket
                 const end_index = DeviceLog.findIndex(obj => {
                     return obj.hwid == request.headers['hwid'] && obj.device_num == device_data.id;
                 });
-                DeviceLog.splice(end_index, 1);
                 connection.query(`INSERT INTO DeviceLog (HWID, ID, Start_Time, End_Time, Log) VALUES (?, ?, ?, ?, ?);`, [request.headers['hwid'], device_data.id, DeviceLog[index].log.START.local_time, DeviceLog[index].log.END.local_time, JSON.stringify(DeviceLog[index].log)], (error, results) => {
                     if (error) {
                         console.log('deviceStatus Update query error:');
                         console.log(error);
                         return;
                     }
-                    //console.log(results);
+                    DeviceLog.splice(end_index, 1);
                 });
                 //console.log(DeviceLog[index].log)
             }
