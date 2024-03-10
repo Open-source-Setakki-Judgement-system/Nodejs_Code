@@ -327,7 +327,7 @@ app.get('/', (req, res) => {
     res.sendStatus(200)
 })
 
-app.get("/get_log", (req, res) => {//장치 목록
+app.get("/get_log", (req, res) => {//로그 데이터
     const num  = req.query.no;
     connection.query(`SELECT Log FROM DeviceLog WHERE No = ?;`,[num] , function (error, results) {
         if (error) {
@@ -335,12 +335,12 @@ app.get("/get_log", (req, res) => {//장치 목록
             console.log(error);
             return;
         }
-        res.send(results)
+        res.send(JSON.parse(results[0].Log))
         //console.log('==============================================')
     });
 });
 
-app.get("/log_list", (req, res) => {//장치 목록
+app.get("/log_list", (req, res) => {//로그 목록
     connection.query(`SELECT No, HWID, ID, Start_Time, End_Time FROM DeviceLog;`, function (error, results) {
         if (error) {
             console.log('SELECT DeviceLog query error:');
