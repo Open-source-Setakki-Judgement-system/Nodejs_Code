@@ -323,6 +323,17 @@ const client_Pinginterval = setInterval(function ping() {//클라이언트 Heart
     });
 }, 50000);
 
+const db_interval = setInterval(() => {
+    connection.query(`SELECT 1 FROM deviceStatus;`, function (error, results) {
+        if (error) {
+            console.log('SELECT DeviceLog query error:');
+            console.log(error);
+            return;
+        }
+        //console.log('==============================================')
+    });
+}, 14400000);
+
 app.get('/', (req, res) => {
     res.sendStatus(200)
 })
