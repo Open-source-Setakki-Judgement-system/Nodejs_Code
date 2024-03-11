@@ -64,6 +64,8 @@ const DeviceSocket = new wsModule.Server(
 );
 
 var ConnectedDevice = [];
+var DeviceLog = [];
+var DiscordConnected = 0;
 
 function heartbeat() {
     this.isAlive = true;
@@ -80,6 +82,13 @@ const connection = mysql.createConnection({
     database: credential.mysql_db
 });
 
+client.login(credential.discord_token);
+
+client.on('ready', (c) => {
+    console.log(`${c.user.tag} is online.`);
+    DiscordConnected = 1;
+});
+
 client.on('messageCreate', (message) => {
     if (message.author.bot) {
         return;
@@ -88,6 +97,28 @@ client.on('messageCreate', (message) => {
 
 client.on('interactionCreate', (interaction) => {
     if (!interaction.isChatInputCommand()) return;
+
+    if (interaction.commandName === '앱버전') {
+        var system
+        if(interaction.options.get('first-number').value == 0)
+        {
+            system = "android";
+        }else
+        {
+            system = "ios";
+        }
+        const version = interaction.options.get('input').value;
+        console.log("[Discord] App Version Changed:" + system + " " + version);
+        connection.query(`UPDATE app_version SET version = ? WHERE os_system = ?;`, [version, system], (error, results) => {
+            if (error) {
+                console.log('app_version Update query error:');
+                console.log(error);
+                return;
+            }
+            //console.log(results);
+        });
+        return interaction.reply('앱 버전이 변경되었습니다.');
+    }
 
     if (interaction.commandName === '상태변경') {
         const device_no = interaction.options.get('first-number').value;
@@ -150,9 +181,9 @@ https.on('upgrade', function upgrade(request, socket, head) {
                 DeviceSocket.emit('connection', ws, request);
             });
         }
-    }
+    } 
     else {
-        socket.destroy();
+        //Socket.IO로 임시로 연결
     }
 });
 
@@ -168,9 +199,18 @@ ClientSocket.on('connection', (ws, request) => {//클라이언트 Websocket
 });
 
 DeviceSocket.on('connection', (ws, request) => {//장치 Websocket
+    const prev_device_index = ConnectedDevice.findIndex((item) => item.hwid == request.headers['hwid']);
+    if(prev_device_index != -1)
+    {
+        ConnectedDevice[prev_device_index].ws.close();
+        ConnectedDevice.splice(prev_device_index, 1);
+    }
     console.log(`[Device][Connected] [${request.headers['hwid']},${request.headers['ch1']},${request.headers['ch2']}]`);
-    const channel = client.channels.cache.get(credential.discord_channelid);
-    channel.send(`장치가 연결되었습니다. [HWID : "${request.headers['hwid']}", CH1 : "${request.headers['ch1']}", CH2 : "${request.headers['ch2']}"]`);
+    if(DiscordConnected == 1)
+    {
+        const channel = client.channels.cache.get(credential.discord_channelid);
+        channel.send(`장치가 연결되었습니다. [HWID : "${request.headers['hwid']}", CH1 : "${request.headers['ch1']}", CH2 : "${request.headers['ch2']}"]`);
+    }
     let DeviceObject = new Object();
     DeviceObject.ws = ws;
     DeviceObject.hwid = request.headers['hwid'];
@@ -199,20 +239,58 @@ DeviceSocket.on('connection', (ws, request) => {//장치 Websocket
                 .setTitle(`고유번호 ${request.headers['hwid']}번 기기 보고`)
                 .setDescription(`FW_VER : ${device_data.fw_ver}`)
                 .addFields(
-                    { name: 'CH1', value: `장치번호 : ${device_data.ch1_deviceno}\n모드 : ${device_data.ch1_mode}\n동작상태 : ${device_data.ch1_status}\n
+                    {
+                        name: 'CH1', value: `장치번호 : ${device_data.ch1_deviceno}\n모드 : ${device_data.ch1_mode}\n동작상태 : ${device_data.ch1_status}\n
                     전류 : ${device_data.ch1_current}A\n유량 : ${device_data.ch1_flow}\n 배수 : ${device_data.ch1_drain}\n
                     세탁기 동작조건\n지연시간 : ${device_data.CH1_EndDelay_W}\n전류 : ${device_data.CH1_Curr_W}A\n 유량 : ${device_data.CH1_Flow_W}\n
-                    건조기 동작조건\n지연시간 : ${device_data.CH1_EndDelay_D}\n전류 : ${device_data.CH1_Curr_D}A`, inline: true },
-                    { name: 'CH2', value: `장치번호 : ${device_data.ch2_deviceno}\n모드 : ${device_data.ch2_mode}\n동작상태 : ${device_data.ch2_status}\n
+                    건조기 동작조건\n지연시간 : ${device_data.CH1_EndDelay_D}\n전류 : ${device_data.CH1_Curr_D}A`, inline: true
+                    },
+                    {
+                        name: 'CH2', value: `장치번호 : ${device_data.ch2_deviceno}\n모드 : ${device_data.ch2_mode}\n동작상태 : ${device_data.ch2_status}\n
                     전류 : ${device_data.ch2_current}A\n유량 : ${device_data.ch2_flow}\n 배수 : ${device_data.ch2_drain}\n
                     세탁기 동작조건\n지연시간 : ${device_data.CH2_EndDelay_W}\n전류 : ${device_data.CH2_Curr_W}A\n 유량 : ${device_data.CH2_Flow_W}\n
-                    건조기 동작조건\n지연시간 : ${device_data.CH2_EndDelay_D}\n전류 : ${device_data.CH2_Curr_D}A`, inline: true },
+                    건조기 동작조건\n지연시간 : ${device_data.CH2_EndDelay_D}\n전류 : ${device_data.CH2_Curr_D}A`, inline: true
+                    },
                     { name: '\u200B', value: '\u200B' },
                     { name: '네트워크', value: `SSID : ${device_data.wifi_ssid}\nLocal IP : ${device_data.wifi_ip}\nRSSI : ${device_data.wifi_rssi}\nMAC : ${device_data.mac}`, inline: true },
                 )
                 .setTimestamp()
             const channel = client.channels.cache.get(credential.discord_channelid);
             channel.send({ embeds: [deviceData] });
+        } else if (device_data.title == "Log") {
+            console.log("[Device][Log] ID: " + device_data.id)
+            const Json_Log = JSON.parse(device_data.log);
+            var index = DeviceLog.findIndex(obj => {
+                return obj.hwid == request.headers['hwid'] && obj.device_num == device_data.id;
+            });
+            if (index == -1) {
+                let LogObject = new Object();
+                LogObject.hwid = request.headers['hwid'];
+                LogObject.device_num = device_data.id;
+                LogObject.log = Json_Log;
+                DeviceLog.push(LogObject);
+                index = DeviceLog.findIndex(obj => {
+                    return obj.hwid == request.headers['hwid'] && obj.device_num == device_data.id;
+                });
+            } else {
+                let jsonMerged = { ...DeviceLog[index].log, ...Json_Log }
+                DeviceLog[index].log = jsonMerged;
+            }
+            if (DeviceLog[index].log.hasOwnProperty('END')) {
+                console.log("[Device][LogEnd] ID: " + device_data.id)
+                const end_index = DeviceLog.findIndex(obj => {
+                    return obj.hwid == request.headers['hwid'] && obj.device_num == device_data.id;
+                });
+                connection.query(`INSERT INTO DeviceLog (HWID, ID, Start_Time, End_Time, Log) VALUES (?, ?, ?, ?, ?);`, [request.headers['hwid'], device_data.id, DeviceLog[index].log.START.local_time, DeviceLog[index].log.END.local_time, JSON.stringify(DeviceLog[index].log)], (error, results) => {
+                    if (error) {
+                        console.log('deviceStatus Update query error:');
+                        console.log(error);
+                        return;
+                    }
+                    DeviceLog.splice(end_index, 1);
+                });
+                //console.log(DeviceLog[index].log)
+            }
         }
     })
 
@@ -242,9 +320,45 @@ const client_Pinginterval = setInterval(function ping() {//클라이언트 Heart
     });
 }, 50000);
 
+const db_interval = setInterval(() => {
+    connection.query(`SELECT 1 FROM deviceStatus;`, function (error, results) {
+        if (error) {
+            console.log('SELECT DeviceLog query error:');
+            console.log(error);
+            return;
+        }
+        //console.log('==============================================')
+    });
+}, 14400000);
+
 app.get('/', (req, res) => {
     res.sendStatus(200)
 })
+
+app.get("/get_log", (req, res) => {//로그 데이터
+    const num  = req.query.no;
+    connection.query(`SELECT Log FROM DeviceLog WHERE No = ?;`,[num] , function (error, results) {
+        if (error) {
+            console.log('SELECT DeviceLog query error:');
+            console.log(error);
+            return;
+        }
+        res.send(JSON.parse(results[0].Log))
+        //console.log('==============================================')
+    });
+});
+
+app.get("/log_list", (req, res) => {//로그 목록
+    connection.query(`SELECT No, HWID, ID, Start_Time, End_Time FROM DeviceLog;`, function (error, results) {
+        if (error) {
+            console.log('SELECT DeviceLog query error:');
+            console.log(error);
+            return;
+        }
+        res.send(results)
+        //console.log('==============================================')
+    });
+});
 
 app.get("/device_list", (req, res) => {//장치 목록
     connection.query(`SELECT * FROM deviceStatus;`, function (error, results) {
@@ -254,6 +368,30 @@ app.get("/device_list", (req, res) => {//장치 목록
             return;
         }
         res.send(results)
+        //console.log('==============================================')
+    });
+});
+
+app.get("/app_ver_android", (req, res) => {//앱 버전
+    connection.query(`SELECT version FROM app_version WHERE os_system = "android";`, function (error, results) {
+        if (error) {
+            console.log('SELECT version FROM app_version query error:');
+            console.log(error);
+            return;
+        }
+        res.send(results[0])
+        //console.log('==============================================')
+    });
+});
+
+app.get("/app_ver_ios", (req, res) => {//앱 버전
+    connection.query(`SELECT version FROM app_version WHERE os_system = "ios";`, function (error, results) {
+        if (error) {
+            console.log('SELECT version FROM app_version query error:');
+            console.log(error);
+            return;
+        }
+        res.send(results[0])
         //console.log('==============================================')
     });
 });
@@ -364,8 +502,11 @@ function StatusUpdate(id, state) {
     else if (state == 2) {
         device_status_str = "연결 끊어짐"
     }
-    const channel = client.channels.cache.get(credential.discord_channelid);
-    channel.send(`${id}번 기기의 상태가 "${device_status_str}"으로 변경되었습니다.`);
+    if(DiscordConnected == 1)
+    {
+        const channel = client.channels.cache.get(credential.discord_channelid);
+        channel.send(`${id}번 기기의 상태가 "${device_status_str}"으로 변경되었습니다.`);
+    }
     //기기상태 DB 업데이트
     connection.query(`UPDATE deviceStatus SET state = ? WHERE id = ?;`, [state, id], (error, results) => {
         if (error) {
