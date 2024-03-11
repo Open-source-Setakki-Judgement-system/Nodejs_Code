@@ -177,6 +177,11 @@ https.on('upgrade', function upgrade(request, socket, head) {
         if (!user || user.name !== credential.auth_name || user.pass !== credential.auth_pw) {
             socket.destroy();
         } else {
+            const prev_device_index = ConnectedDevice.findIndex((item) => item.hwid == request.headers['hwid']);
+            if (prev_device_index != -1) {
+                ConnectedDevice[prev_device_index].ws.close();
+                ConnectedDevice.splice(prev_device_index, 1);
+            }
             DeviceSocket.handleUpgrade(request, socket, head, function done(ws) {
                 DeviceSocket.emit('connection', ws, request);
             });
@@ -199,12 +204,6 @@ ClientSocket.on('connection', (ws, request) => {//클라이언트 Websocket
 });
 
 DeviceSocket.on('connection', (ws, request) => {//장치 Websocket
-    const prev_device_index = ConnectedDevice.findIndex((item) => item.hwid == request.headers['hwid']);
-    if(prev_device_index != -1)
-    {
-        ConnectedDevice[prev_device_index].ws.close();
-        ConnectedDevice.splice(prev_device_index, 1);
-    }
     console.log(`[Device][Connected] [${request.headers['hwid']},${request.headers['ch1']},${request.headers['ch2']}]`);
     if(DiscordConnected == 1)
     {
