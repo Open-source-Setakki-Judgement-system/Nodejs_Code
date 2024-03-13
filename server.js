@@ -181,10 +181,11 @@ https.on('upgrade', function upgrade(request, socket, head) {
             if (prev_device_index != -1) {
                 ConnectedDevice[prev_device_index].ws.close();
                 ConnectedDevice.splice(prev_device_index, 1);
+            }else{
+                DeviceSocket.handleUpgrade(request, socket, head, function done(ws) {
+                    DeviceSocket.emit('connection', ws, request);
+                });
             }
-            DeviceSocket.handleUpgrade(request, socket, head, function done(ws) {
-                DeviceSocket.emit('connection', ws, request);
-            });
         }
     } 
     else {
@@ -222,10 +223,13 @@ DeviceSocket.on('connection', (ws, request) => {//장치 Websocket
     }
 
     ws.on('message', (msg) => {
-        const device_data = JSON.parse(msg)
+        var device_data = JSON.parse(msg)
         if (device_data.title == "Update") {
             console.log("[Device][Update] ID: " + device_data.id + " Status: " + device_data.state)
-            StatusUpdate(device_data.id, device_data.state)
+            if (device_data.type === undefined) {
+                device_data.type = 1
+            }
+            StatusUpdate(device_data.id, device_data.state, device_data.type)
         } else if (device_data.title == "GetData") {
             device_data.ch1_current = device_data.ch1_current.toFixed(2)
             device_data.ch2_current = device_data.ch2_current.toFixed(2)
@@ -491,7 +495,7 @@ function Sendto(HWID, data) {
     ConnectedDevice[arr_index].ws.send(data);
 }
 
-function StatusUpdate(id, state) {
+function StatusUpdate(id, state, type) {
     let device_status_str
     if (state == 1) {
         device_status_str = "사용가능"
@@ -537,7 +541,7 @@ function StatusUpdate(id, state) {
         });
     });
 
-    if (state == 0)//ON
+    if (state == 0 && type == 1)//ON
     {
         connection.query(`UPDATE deviceStatus SET ON_time = ? WHERE id = ?;`, [moment().format(), id], (error, results) => {
             if (error) {
@@ -547,7 +551,7 @@ function StatusUpdate(id, state) {
             }
             //console.log(results);
         });
-    } else if (state == 1) {//OFF
+    } else if (state == 1 && type == 1) {//OFF
         connection.query(`UPDATE deviceStatus SET OFF_time = ? WHERE id = ?;`, [moment().format(), id], (error, results) => {
             if (error) {
                 console.log('deviceStatus Update query error:');
