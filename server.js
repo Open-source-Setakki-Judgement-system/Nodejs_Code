@@ -126,7 +126,7 @@ client.on('interactionCreate', (interaction) => {
         const device_no = interaction.options.get('first-number').value;
         const device_status = interaction.options.get('second-number').value;
         console.log("[Discord] Status Updated Device_NO:" + device_no + " Data:" + device_status);
-        StatusUpdate(device_no, device_status)
+        StatusUpdate(device_no, device_status, 1)
         return interaction.reply('OK');
     }
     if (interaction.commandName === '연결목록') {
@@ -311,8 +311,8 @@ DeviceSocket.on('connection', (ws, request) => {//장치 Websocket
         channel.send(`장치의 연결이 끊어졌습니다. [HWID : "${request.headers['hwid']}", CH1 : "${request.headers['ch1']}", CH2 : "${request.headers['ch2']}"]<@&${credential.discord_roleid}>`);
         console.log(`[Device][Disconnected] [${request.headers['hwid']},${request.headers['ch1']},${request.headers['ch2']}]`);
         ConnectedDevice.splice(ConnectedDevice.findIndex(obj => obj.hwid == request.headers['hwid']), 1);
-        StatusUpdate(request.headers['ch1'], 2)
-        StatusUpdate(request.headers['ch2'], 2)
+        StatusUpdate(request.headers['ch1'], 2, 0)
+        StatusUpdate(request.headers['ch2'], 2, 0)
     })
 });
 
