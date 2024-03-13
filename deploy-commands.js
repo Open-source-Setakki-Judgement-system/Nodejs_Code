@@ -77,6 +77,10 @@ const commands = [
         required: true
       }
     ]
+  },
+  {
+    name: '재시작',
+    description: 'USE THIS AT YOUR OWN RISK.',
   }
 ];
 

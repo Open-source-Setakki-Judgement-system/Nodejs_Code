@@ -86,6 +86,8 @@ client.login(credential.discord_token);
 
 client.on('ready', (c) => {
     console.log(`${c.user.tag} is online.`);
+    const channel = client.channels.cache.get(credential.discord_channelid);
+    channel.send(`Hell World`);
     DiscordConnected = 1;
 });
 
@@ -157,6 +159,9 @@ client.on('interactionCreate', (interaction) => {
             Sendto(device_no, JSON.stringify(DataObject))
             return interaction.reply("OK");
         }
+    }
+    if (interaction.commandName === '재시작') {
+        process.exit();
     }
 });
 
@@ -279,8 +284,12 @@ DeviceSocket.on('connection', (ws, request) => {//장치 Websocket
                 let jsonMerged = { ...DeviceLog[index].log, ...Json_Log }
                 DeviceLog[index].log = jsonMerged;
             }
+            if (DeviceLog[index].log.hasOwnProperty('START')) {
+                DeviceLog[index].log.START.local_time = moment().format();
+            }
             if (DeviceLog[index].log.hasOwnProperty('END')) {
                 console.log("[Device][LogEnd] ID: " + device_data.id)
+                DeviceLog[index].log.END.local_time = moment().format();
                 const end_index = DeviceLog.findIndex(obj => {
                     return obj.hwid == request.headers['hwid'] && obj.device_num == device_data.id;
                 });
@@ -496,17 +505,17 @@ function Sendto(HWID, data) {
 }
 
 function StatusUpdate(id, state, type) {
-    let device_status_str
-    if (state == 1) {
-        device_status_str = "사용가능"
-    } else if (state == 0) {
-        device_status_str = "작동중"
-    }
-    else if (state == 2) {
-        device_status_str = "연결 끊어짐"
-    }
-    if(DiscordConnected == 1)
+    if(DiscordConnected == 1 && type == 1)
     {
+        let device_status_str
+        if (state == 1) {
+            device_status_str = "사용가능"
+        } else if (state == 0) {
+            device_status_str = "작동중"
+        }
+        else if (state == 2) {
+            device_status_str = "연결 끊어짐"
+        }
         const channel = client.channels.cache.get(credential.discord_channelid);
         channel.send(`${id}번 기기의 상태가 "${device_status_str}"으로 변경되었습니다.`);
     }
