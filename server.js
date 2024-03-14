@@ -268,6 +268,9 @@ DeviceSocket.on('connection', (ws, request) => {//장치 Websocket
         } else if (device_data.title == "Log") {
             console.log("[Device][Log] ID: " + device_data.id)
             const Json_Log = JSON.parse(device_data.log);
+            if (Json_Log.hasOwnProperty('START')) {
+                Json_Log.START.local_time = moment().format();
+            }
             var index = DeviceLog.findIndex(obj => {
                 return obj.hwid == request.headers['hwid'] && obj.device_num == device_data.id;
             });
@@ -284,24 +287,25 @@ DeviceSocket.on('connection', (ws, request) => {//장치 Websocket
                 let jsonMerged = { ...DeviceLog[index].log, ...Json_Log }
                 DeviceLog[index].log = jsonMerged;
             }
-            if (DeviceLog[index].log.hasOwnProperty('START')) {
-                DeviceLog[index].log.START.local_time = moment().format();
-            }
             if (DeviceLog[index].log.hasOwnProperty('END')) {
                 console.log("[Device][LogEnd] ID: " + device_data.id)
                 DeviceLog[index].log.END.local_time = moment().format();
                 const end_index = DeviceLog.findIndex(obj => {
                     return obj.hwid == request.headers['hwid'] && obj.device_num == device_data.id;
                 });
-                connection.query(`INSERT INTO DeviceLog (HWID, ID, Start_Time, End_Time, Log) VALUES (?, ?, ?, ?, ?);`, [request.headers['hwid'], device_data.id, DeviceLog[index].log.START.local_time, DeviceLog[index].log.END.local_time, JSON.stringify(DeviceLog[index].log)], (error, results) => {
-                    if (error) {
-                        console.log('deviceStatus Update query error:');
-                        console.log(error);
-                        return;
-                    }
-                    DeviceLog.splice(end_index, 1);
-                });
-                //console.log(DeviceLog[index].log)
+                if (DeviceLog[index].log.START.local_time === undefined || DeviceLog[index].log.END.local_time === undefined) {
+                    console.log("[Device][LogEnd] Not Logged Due to START END Undefined")
+                } else {
+                    connection.query(`INSERT INTO DeviceLog (HWID, ID, Start_Time, End_Time, Log) VALUES (?, ?, ?, ?, ?);`, [request.headers['hwid'], device_data.id, DeviceLog[index].log.START.local_time, DeviceLog[index].log.END.local_time, JSON.stringify(DeviceLog[index].log)], (error, results) => {
+                        if (error) {
+                            console.log('deviceStatus Update query error:');
+                            console.log(error);
+                            return;
+                        }
+                        DeviceLog.splice(end_index, 1);
+                    });
+                    //console.log(DeviceLog[index].log)
+                }
             }
         }
     })
