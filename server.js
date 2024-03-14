@@ -138,6 +138,9 @@ client.on('interactionCreate', (interaction) => {
             var table = new AsciiTable3(`장치 ${ConnectedDevice.length}대 연결됨`)
                 .setHeading('HWID', 'CH1', 'CH2')
                 .setAligns(AlignmentEnum.LEFT)
+            ConnectedDevice.sort(function (a, b) {
+                return a.hwid - b.hwid;
+            });
             for (let i = 0; i < ConnectedDevice.length; i++) {
                 table.addRow(ConnectedDevice[i].hwid, ConnectedDevice[i].ch1, ConnectedDevice[i].ch2)
             }
