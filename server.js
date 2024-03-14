@@ -79,7 +79,8 @@ const connection = mysql.createConnection({
     host: credential.mysql_host,
     user: credential.mysql_user,
     password: credential.mysql_pw,
-    database: credential.mysql_db
+    database: credential.mysql_db,
+    timezone: "+09:00"
 });
 
 client.login(credential.discord_token);
