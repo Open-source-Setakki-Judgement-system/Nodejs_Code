@@ -349,7 +349,7 @@ const db_interval = setInterval(() => {
 }, 14400000);
 
 app.get('/', (req, res) => {
-    res.sendStatus(200)
+    res.redirect('https://github.com/team-osj')
 })
 
 app.get("/get_log", (req, res) => {//로그 데이터
