@@ -457,7 +457,7 @@ app.post("/push_request", (req, res) => {//알림 신청 기능
 
 app.post("/push_list", (req, res) => {//알림 신청 목록 확인 기능
     let token = req.body.token;
-    console.log("[App] Push List Request Device Token: " + token)
+    //console.log("[App] Push List Request Device Token: " + token)
 
     connection.query(`SELECT device_id, device_type, state FROM PushAlert WHERE Token = ? ORDER BY device_id;`, [token], function (error, results) {
         if (error) {
@@ -473,7 +473,7 @@ app.post("/push_list", (req, res) => {//알림 신청 목록 확인 기능
 app.post("/push_cancel", (req, res) => {//알림 취소 기능
     let token = req.body.token;
     let device_id = req.body.device_id;
-    console.log("[App] Push Cancel Request Device Token: " + token + " Device ID: " + device_id)
+    //console.log("[App] Push Cancel Request Device Token: " + token + " Device ID: " + device_id)
 
     connection.query(`DELETE FROM PushAlert WHERE device_id = ? AND Token = ?;`, [device_id, token], function (error, results) {
         if (error) {
@@ -504,7 +504,7 @@ https.listen(https_port, () => {
 
 function Sendto(HWID, data) {
     const arr_index = ConnectedDevice.findIndex(obj => obj.hwid == HWID)
-    console.log(arr_index)
+    //console.log(arr_index)
     if(arr_index >= 0 && ConnectedDevice[arr_index].ws && ConnectedDevice[arr_index].ws.readyState === ConnectedDevice[arr_index].ws.OPEN)
     ConnectedDevice[arr_index].ws.send(data);
 }
