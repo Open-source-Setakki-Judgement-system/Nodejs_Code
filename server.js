@@ -122,7 +122,34 @@ client.on('interactionCreate', (interaction) => {
         });
         return interaction.reply('앱 버전이 변경되었습니다.');
     }
-
+    if (interaction.commandName === '스토어') {
+        var system
+        var store_status
+        if(interaction.options.get('first-number').value == 0)
+        {
+            system = "android";
+        }else
+        {
+            system = "ios";
+        }
+        if(interaction.options.get('second-number').value == 0)
+        {
+            store_status = "0";
+        }else
+        {
+            store_status = "1";
+        }
+        console.log("[Discord] APP Store Status Changed:" + system + " " + store_status);
+        connection.query(`UPDATE app_version SET store_status = ? WHERE os_system = ?;`, [store_status, system], (error, results) => {
+            if (error) {
+                console.log('app_store Update query error:');
+                console.log(error);
+                return;
+            }
+            //console.log(results);
+        });
+        return interaction.reply('스토어 등록 여부가 변경되었습니다.');
+    }
     if (interaction.commandName === '상태변경') {
         const device_no = interaction.options.get('first-number').value;
         const device_status = interaction.options.get('second-number').value;
@@ -197,9 +224,6 @@ https.on('upgrade', function upgrade(request, socket, head) {
             }
         }
     } 
-    else {
-        //Socket.IO로 임시로 연결
-    }
 });
 
 ClientSocket.on('connection', (ws, request) => {//클라이언트 Websocket
@@ -272,9 +296,6 @@ DeviceSocket.on('connection', (ws, request) => {//장치 Websocket
         } else if (device_data.title == "Log") {
             console.log("[Device][Log] ID: " + device_data.id)
             const Json_Log = JSON.parse(device_data.log);
-            if (Json_Log.hasOwnProperty('START')) {
-                Json_Log.START.local_time = moment().format();
-            }
             var index = DeviceLog.findIndex(obj => {
                 return obj.hwid == request.headers['hwid'] && obj.device_num == device_data.id;
             });
@@ -293,7 +314,6 @@ DeviceSocket.on('connection', (ws, request) => {//장치 Websocket
             }
             if (DeviceLog[index].log.hasOwnProperty('END')) {
                 console.log("[Device][LogEnd] ID: " + device_data.id)
-                DeviceLog[index].log.END.local_time = moment().format();
                 const end_index = DeviceLog.findIndex(obj => {
                     return obj.hwid == request.headers['hwid'] && obj.device_num == device_data.id;
                 });
@@ -393,7 +413,7 @@ app.get("/device_list", (req, res) => {//장치 목록
 });
 
 app.get("/app_ver_android", (req, res) => {//앱 버전
-    connection.query(`SELECT version FROM app_version WHERE os_system = "android";`, function (error, results) {
+    connection.query(`SELECT version, store_status FROM app_version WHERE os_system = "android";`, function (error, results) {
         if (error) {
             console.log('SELECT version FROM app_version query error:');
             console.log(error);
@@ -405,7 +425,7 @@ app.get("/app_ver_android", (req, res) => {//앱 버전
 });
 
 app.get("/app_ver_ios", (req, res) => {//앱 버전
-    connection.query(`SELECT version FROM app_version WHERE os_system = "ios";`, function (error, results) {
+    connection.query(`SELECT version, store_status FROM app_version WHERE os_system = "ios";`, function (error, results) {
         if (error) {
             console.log('SELECT version FROM app_version query error:');
             console.log(error);

@@ -31,6 +31,44 @@ const commands = [
     ]
   },
   {
+    name: '스토어',
+    description: '안드로이드/IOS 앱의 스토어 등록 여부를 변경합니다.(업데이트 알림)',
+    options: [
+      {
+        name: 'first-number',
+        description: '안드로이드/IOS',
+        type: ApplicationCommandOptionType.Number,
+        choices: [
+          {
+            name: 'Andriod',
+            value: 0
+          },
+          {
+            name: 'IOS',
+            value: 1
+          }
+        ],
+        required: true
+      },
+      {
+        name: 'second-number',
+        description: '등록여부',
+        type: ApplicationCommandOptionType.Number,
+        choices: [
+          {
+            name: '미등록',
+            value: 0
+          },
+          {
+            name: '등록',
+            value: 1
+          }
+        ],
+        required: true
+      }
+    ]
+  },
+  {
     name: '상태변경',
     description: '장치의 상태를 변경합니다.',
     options: [
