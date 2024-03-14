@@ -135,7 +135,7 @@ client.on('interactionCreate', (interaction) => {
             return interaction.reply("연결된 장치가 없습니다.");
         }
         else {
-            var table = new AsciiTable3('임베디드 장치 연결 목록')
+            var table = new AsciiTable3(`장치 ${ConnectedDevice.length}대 연결됨`)
                 .setHeading('HWID', 'CH1', 'CH2')
                 .setAligns(AlignmentEnum.LEFT)
             for (let i = 0; i < ConnectedDevice.length; i++) {
