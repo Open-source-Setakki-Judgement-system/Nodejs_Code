@@ -321,9 +321,7 @@ DeviceSocket.on('connection', (ws, request) => {//장치 Websocket
                 const end_index = DeviceLog.findIndex(obj => {
                     return obj.hwid == request.headers['hwid'] && obj.device_num == device_data.id;
                 });
-                if (DeviceLog[index].log.START.local_time === undefined || DeviceLog[index].log.END.local_time === undefined) {
-                    console.log("[Device][LogEnd] Not Logged Due to START END Undefined")
-                } else {
+                if (DeviceLog[index].log.START.hasOwnProperty('local_time') && DeviceLog[index].log.END.hasOwnProperty('local_time')) {
                     connection.query(`INSERT INTO DeviceLog (HWID, ID, Start_Time, End_Time, Log) VALUES (?, ?, ?, ?, ?);`, [request.headers['hwid'], device_data.id, DeviceLog[index].log.START.local_time, DeviceLog[index].log.END.local_time, JSON.stringify(DeviceLog[index].log)], (error, results) => {
                         if (error) {
                             console.log('deviceStatus Update query error:');
@@ -333,6 +331,8 @@ DeviceSocket.on('connection', (ws, request) => {//장치 Websocket
                         DeviceLog.splice(end_index, 1);
                     });
                     //console.log(DeviceLog[index].log)
+                } else {
+                    console.log("[Device][LogEnd] Not Logged Due to START END Undefined")
                 }
             }
         }
