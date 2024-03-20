@@ -79,13 +79,16 @@ const connection = mysql.createConnection({
     host: credential.mysql_host,
     user: credential.mysql_user,
     password: credential.mysql_pw,
-    database: credential.mysql_db
+    database: credential.mysql_db,
+    timezone: "+09:00"
 });
 
 client.login(credential.discord_token);
 
 client.on('ready', (c) => {
     console.log(`${c.user.tag} is online.`);
+    const channel = client.channels.cache.get(credential.discord_channelid);
+    channel.send(`Hell World`);
     DiscordConnected = 1;
 });
 
@@ -119,12 +122,39 @@ client.on('interactionCreate', (interaction) => {
         });
         return interaction.reply('앱 버전이 변경되었습니다.');
     }
-
+    if (interaction.commandName === '스토어') {
+        var system
+        var store_status
+        if(interaction.options.get('first-number').value == 0)
+        {
+            system = "android";
+        }else
+        {
+            system = "ios";
+        }
+        if(interaction.options.get('second-number').value == 0)
+        {
+            store_status = "0";
+        }else
+        {
+            store_status = "1";
+        }
+        console.log("[Discord] APP Store Status Changed:" + system + " " + store_status);
+        connection.query(`UPDATE app_version SET store_status = ? WHERE os_system = ?;`, [store_status, system], (error, results) => {
+            if (error) {
+                console.log('app_store Update query error:');
+                console.log(error);
+                return;
+            }
+            //console.log(results);
+        });
+        return interaction.reply('스토어 등록 여부가 변경되었습니다.');
+    }
     if (interaction.commandName === '상태변경') {
         const device_no = interaction.options.get('first-number').value;
         const device_status = interaction.options.get('second-number').value;
         console.log("[Discord] Status Updated Device_NO:" + device_no + " Data:" + device_status);
-        StatusUpdate(device_no, device_status)
+        StatusUpdate(device_no, device_status, 1)
         return interaction.reply('OK');
     }
     if (interaction.commandName === '연결목록') {
@@ -132,9 +162,12 @@ client.on('interactionCreate', (interaction) => {
             return interaction.reply("연결된 장치가 없습니다.");
         }
         else {
-            var table = new AsciiTable3('임베디드 장치 연결 목록')
+            var table = new AsciiTable3(`장치 ${ConnectedDevice.length}대 연결됨`)
                 .setHeading('HWID', 'CH1', 'CH2')
                 .setAligns(AlignmentEnum.LEFT)
+            ConnectedDevice.sort(function (a, b) {
+                return a.hwid - b.hwid;
+            });
             for (let i = 0; i < ConnectedDevice.length; i++) {
                 table.addRow(ConnectedDevice[i].hwid, ConnectedDevice[i].ch1, ConnectedDevice[i].ch2)
             }
@@ -158,6 +191,35 @@ client.on('interactionCreate', (interaction) => {
             return interaction.reply("OK");
         }
     }
+    if (interaction.commandName === '수동푸시') {
+        var jsondata = interaction.options.get('input').value;
+        jsondata = JSON.parse(jsondata)
+        console.log("[Discord] Manual Push Alert:" + jsondata.Token + " " + jsondata.Title + " " + jsondata.Body);
+        let target_tokens = new Array();
+        target_tokens[0] = jsondata.Token
+        let message = {
+            notification: {
+                title: `${jsondata.Title}`,
+                body: `${jsondata.Body}`,
+            },
+            tokens: target_tokens,
+            android: {
+                priority: "high"
+            },
+            apns: {
+                payload: {
+                    aps: {
+                        contentAvailable: true,
+                    }
+                }
+            }
+        }
+        FcmMultiCast(message, target_tokens)
+        return interaction.reply("OK");
+    }
+    if (interaction.commandName === '재시작') {
+        process.exit();
+    }
 });
 
 client.on('ready', (c) => {
@@ -177,14 +239,17 @@ https.on('upgrade', function upgrade(request, socket, head) {
         if (!user || user.name !== credential.auth_name || user.pass !== credential.auth_pw) {
             socket.destroy();
         } else {
-            DeviceSocket.handleUpgrade(request, socket, head, function done(ws) {
-                DeviceSocket.emit('connection', ws, request);
-            });
+            const prev_device_index = ConnectedDevice.findIndex((item) => item.hwid == request.headers['hwid']);
+            if (prev_device_index != -1) {
+                ConnectedDevice[prev_device_index].ws.close();
+                ConnectedDevice.splice(prev_device_index, 1);
+            }else{
+                DeviceSocket.handleUpgrade(request, socket, head, function done(ws) {
+                    DeviceSocket.emit('connection', ws, request);
+                });
+            }
         }
     } 
-    else {
-        //Socket.IO로 임시로 연결
-    }
 });
 
 ClientSocket.on('connection', (ws, request) => {//클라이언트 Websocket
@@ -199,12 +264,6 @@ ClientSocket.on('connection', (ws, request) => {//클라이언트 Websocket
 });
 
 DeviceSocket.on('connection', (ws, request) => {//장치 Websocket
-    const prev_device_index = ConnectedDevice.findIndex((item) => item.hwid == request.headers['hwid']);
-    if(prev_device_index != -1)
-    {
-        ConnectedDevice[prev_device_index].ws.close();
-        ConnectedDevice.splice(prev_device_index, 1);
-    }
     console.log(`[Device][Connected] [${request.headers['hwid']},${request.headers['ch1']},${request.headers['ch2']}]`);
     if(DiscordConnected == 1)
     {
@@ -223,10 +282,13 @@ DeviceSocket.on('connection', (ws, request) => {//장치 Websocket
     }
 
     ws.on('message', (msg) => {
-        const device_data = JSON.parse(msg)
+        var device_data = JSON.parse(msg)
         if (device_data.title == "Update") {
             console.log("[Device][Update] ID: " + device_data.id + " Status: " + device_data.state)
-            StatusUpdate(device_data.id, device_data.state)
+            if (device_data.type === undefined) {
+                device_data.type = 1
+            }
+            StatusUpdate(device_data.id, device_data.state, device_data.type)
         } else if (device_data.title == "GetData") {
             device_data.ch1_current = device_data.ch1_current.toFixed(2)
             device_data.ch2_current = device_data.ch2_current.toFixed(2)
@@ -260,6 +322,9 @@ DeviceSocket.on('connection', (ws, request) => {//장치 Websocket
         } else if (device_data.title == "Log") {
             console.log("[Device][Log] ID: " + device_data.id)
             const Json_Log = JSON.parse(device_data.log);
+            if (Json_Log.hasOwnProperty('START')) {
+                Json_Log.START.local_time = moment().format();
+            }
             var index = DeviceLog.findIndex(obj => {
                 return obj.hwid == request.headers['hwid'] && obj.device_num == device_data.id;
             });
@@ -278,18 +343,23 @@ DeviceSocket.on('connection', (ws, request) => {//장치 Websocket
             }
             if (DeviceLog[index].log.hasOwnProperty('END')) {
                 console.log("[Device][LogEnd] ID: " + device_data.id)
+                DeviceLog[index].log.END.local_time = moment().format();
                 const end_index = DeviceLog.findIndex(obj => {
                     return obj.hwid == request.headers['hwid'] && obj.device_num == device_data.id;
                 });
-                connection.query(`INSERT INTO DeviceLog (HWID, ID, Start_Time, End_Time, Log) VALUES (?, ?, ?, ?, ?);`, [request.headers['hwid'], device_data.id, DeviceLog[index].log.START.local_time, DeviceLog[index].log.END.local_time, JSON.stringify(DeviceLog[index].log)], (error, results) => {
-                    if (error) {
-                        console.log('deviceStatus Update query error:');
-                        console.log(error);
-                        return;
-                    }
-                    DeviceLog.splice(end_index, 1);
-                });
-                //console.log(DeviceLog[index].log)
+                if (DeviceLog[index].log.hasOwnProperty('START') && DeviceLog[index].log.hasOwnProperty('END')) {
+                    connection.query(`INSERT INTO DeviceLog (HWID, ID, Start_Time, End_Time, Log) VALUES (?, ?, ?, ?, ?);`, [request.headers['hwid'], device_data.id, DeviceLog[index].log.START.local_time, DeviceLog[index].log.END.local_time, JSON.stringify(DeviceLog[index].log)], (error, results) => {
+                        if (error) {
+                            console.log('deviceStatus Update query error:');
+                            console.log(error);
+                            return;
+                        }
+                        DeviceLog.splice(end_index, 1);
+                    });
+                    //console.log(DeviceLog[index].log)
+                } else {
+                    console.log("[Device][LogEnd] Not Logged Due to START END Undefined")
+                }
             }
         }
     })
@@ -299,8 +369,8 @@ DeviceSocket.on('connection', (ws, request) => {//장치 Websocket
         channel.send(`장치의 연결이 끊어졌습니다. [HWID : "${request.headers['hwid']}", CH1 : "${request.headers['ch1']}", CH2 : "${request.headers['ch2']}"]<@&${credential.discord_roleid}>`);
         console.log(`[Device][Disconnected] [${request.headers['hwid']},${request.headers['ch1']},${request.headers['ch2']}]`);
         ConnectedDevice.splice(ConnectedDevice.findIndex(obj => obj.hwid == request.headers['hwid']), 1);
-        StatusUpdate(request.headers['ch1'], 2)
-        StatusUpdate(request.headers['ch2'], 2)
+        StatusUpdate(request.headers['ch1'], 2, 0)
+        StatusUpdate(request.headers['ch2'], 2, 0)
     })
 });
 
@@ -332,7 +402,7 @@ const db_interval = setInterval(() => {
 }, 14400000);
 
 app.get('/', (req, res) => {
-    res.sendStatus(200)
+    res.redirect('https://github.com/team-osj')
 })
 
 app.get("/get_log", (req, res) => {//로그 데이터
@@ -373,7 +443,7 @@ app.get("/device_list", (req, res) => {//장치 목록
 });
 
 app.get("/app_ver_android", (req, res) => {//앱 버전
-    connection.query(`SELECT version FROM app_version WHERE os_system = "android";`, function (error, results) {
+    connection.query(`SELECT version, store_status FROM app_version WHERE os_system = "android";`, function (error, results) {
         if (error) {
             console.log('SELECT version FROM app_version query error:');
             console.log(error);
@@ -385,7 +455,7 @@ app.get("/app_ver_android", (req, res) => {//앱 버전
 });
 
 app.get("/app_ver_ios", (req, res) => {//앱 버전
-    connection.query(`SELECT version FROM app_version WHERE os_system = "ios";`, function (error, results) {
+    connection.query(`SELECT version, store_status FROM app_version WHERE os_system = "ios";`, function (error, results) {
         if (error) {
             console.log('SELECT version FROM app_version query error:');
             console.log(error);
@@ -440,7 +510,7 @@ app.post("/push_request", (req, res) => {//알림 신청 기능
 
 app.post("/push_list", (req, res) => {//알림 신청 목록 확인 기능
     let token = req.body.token;
-    console.log("[App] Push List Request Device Token: " + token)
+    //console.log("[App] Push List Request Device Token: " + token)
 
     connection.query(`SELECT device_id, device_type, state FROM PushAlert WHERE Token = ? ORDER BY device_id;`, [token], function (error, results) {
         if (error) {
@@ -456,7 +526,7 @@ app.post("/push_list", (req, res) => {//알림 신청 목록 확인 기능
 app.post("/push_cancel", (req, res) => {//알림 취소 기능
     let token = req.body.token;
     let device_id = req.body.device_id;
-    console.log("[App] Push Cancel Request Device Token: " + token + " Device ID: " + device_id)
+    //console.log("[App] Push Cancel Request Device Token: " + token + " Device ID: " + device_id)
 
     connection.query(`DELETE FROM PushAlert WHERE device_id = ? AND Token = ?;`, [device_id, token], function (error, results) {
         if (error) {
@@ -487,23 +557,23 @@ https.listen(https_port, () => {
 
 function Sendto(HWID, data) {
     const arr_index = ConnectedDevice.findIndex(obj => obj.hwid == HWID)
-    console.log(arr_index)
+    //console.log(arr_index)
     if(arr_index >= 0 && ConnectedDevice[arr_index].ws && ConnectedDevice[arr_index].ws.readyState === ConnectedDevice[arr_index].ws.OPEN)
     ConnectedDevice[arr_index].ws.send(data);
 }
 
-function StatusUpdate(id, state) {
-    let device_status_str
-    if (state == 1) {
-        device_status_str = "사용가능"
-    } else if (state == 0) {
-        device_status_str = "작동중"
-    }
-    else if (state == 2) {
-        device_status_str = "연결 끊어짐"
-    }
-    if(DiscordConnected == 1)
+function StatusUpdate(id, state, type) {
+    if(DiscordConnected == 1 && type == 1)
     {
+        let device_status_str
+        if (state == 1) {
+            device_status_str = "사용가능"
+        } else if (state == 0) {
+            device_status_str = "작동중"
+        }
+        else if (state == 2) {
+            device_status_str = "연결 끊어짐"
+        }
         const channel = client.channels.cache.get(credential.discord_channelid);
         channel.send(`${id}번 기기의 상태가 "${device_status_str}"으로 변경되었습니다.`);
     }
@@ -538,7 +608,7 @@ function StatusUpdate(id, state) {
         });
     });
 
-    if (state == 0)//ON
+    if (state == 0 && type == 1)//ON
     {
         connection.query(`UPDATE deviceStatus SET ON_time = ? WHERE id = ?;`, [moment().format(), id], (error, results) => {
             if (error) {
@@ -548,7 +618,7 @@ function StatusUpdate(id, state) {
             }
             //console.log(results);
         });
-    } else if (state == 1) {//OFF
+    } else if (state == 1 && type == 1) {//OFF
         connection.query(`UPDATE deviceStatus SET OFF_time = ? WHERE id = ?;`, [moment().format(), id], (error, results) => {
             if (error) {
                 console.log('deviceStatus Update query error:');
@@ -575,97 +645,41 @@ function StatusUpdate(id, state) {
                         console.log(error);
                         return;
                     }
-                    //console.log(results);
-                    //console.log(results.length);
-
-                    //해당되는 Token 배열형태로 저장
-                    for (let i = 0; i < results.length; i++) {
-                        target_tokens[i] = results[i].Token;
-                    }
-
-                    //해당되는 Token이 없다면 return
-                    if (target_tokens == 0) {
+                    if (results.length <= 0) {
                         console.log("[FCM] No push request (" + id + ")");
                         return
                     } else {
+                        for (let i = 0; i < results.length; i++) { //해당되는 Token 배열형태로 저장
+                            target_tokens[i] = results[i].Token;
+                        }
                         console.log("[FCM] Push Sent");
                         console.log("[FCM] " + target_tokens);
-
                         connection.query(`SELECT device_type FROM deviceStatus WHERE id = ?;`, [id], function (error, results) {
+                            var type_string = "";
                             if (results[0].device_type == "WASH") {
-                                //FCM 메시지 내용
-                                let message = {
-                                    notification: {
-                                        title: '세탁기 알림',
-                                        body: `${id}번 세탁기의 동작이 완료되었습니다.\r\n동작시간 : ${hour_diff}시간 ${minute_diff}분 ${second_diff}초`,
-                                    },
-                                    tokens: target_tokens,
-                                    android: {
-                                        priority: "high"
-                                    },
-                                    apns: {
-                                        payload: {
-                                            aps: {
-                                                contentAvailable: true,
-                                            }
-                                        }
-                                    }
-                                }
-
-                                //FCM 메시지 보내기
-                                fcm.messaging().sendMulticast(message)
-                                    .then((response) => {
-                                        if (response.failureCount > 0) {
-                                            const failedTokens = [];
-                                            response.responses.forEach((resp, idx) => {
-                                                if (!resp.success) {
-                                                    failedTokens.push(target_tokens[idx]);
-                                                }
-                                            });
-                                            console.log('[FCM] Failed Token: ' + failedTokens);
-                                        }
-                                        //console.log('FCM Success')
-                                        return
-                                    });
+                                type_string = "세탁기"
                             } else if (results[0].device_type == "DRY") {
-                                //FCM 메시지 내용
-                                let message = {
-                                    notification: {
-                                        title: '건조기 알림',
-                                        body: `${id}번 건조기의 동작이 완료되었습니다.\r\n동작시간 : ${hour_diff}시간 ${minute_diff}분 ${second_diff}초`,
-                                    },
-                                    tokens: target_tokens,
-                                    android: {
-                                        priority: "high"
-                                    },
-                                    apns: {
-                                        payload: {
-                                            aps: {
-                                                contentAvailable: true,
-                                            }
+                                type_string = "건조기"
+                            }
+                            let message = {
+                                notification: {
+                                    title: `${type_string} 알림`,
+                                    body: `${id}번 ${type_string}의 동작이 완료되었습니다.\r\n동작시간 : ${hour_diff}시간 ${minute_diff}분 ${second_diff}초`,
+                                },
+                                tokens: target_tokens,
+                                android: {
+                                    priority: "high"
+                                },
+                                apns: {
+                                    payload: {
+                                        aps: {
+                                            contentAvailable: true,
                                         }
                                     }
                                 }
-
-                                //FCM 메시지 보내기
-                                fcm.messaging().sendMulticast(message)
-                                    .then((response) => {
-                                        if (response.failureCount > 0) {
-                                            const failedTokens = [];
-                                            response.responses.forEach((resp, idx) => {
-                                                if (!resp.success) {
-                                                    failedTokens.push(target_tokens[idx]);
-                                                }
-                                            });
-                                            console.log('[FCM] Failed Token:' + failedTokens);
-                                        }
-                                        //console.log('FCM Success')
-                                        return
-                                    });
-
                             }
+                            FcmMultiCast(message, target_tokens)
                         });
-
                     }
                 });
 
@@ -682,4 +696,21 @@ function StatusUpdate(id, state) {
         });
     }
 
+}
+
+function FcmMultiCast(msg, token_array) {
+    fcm.messaging().sendMulticast(msg)
+        .then((response) => {
+            if (response.failureCount > 0) {
+                const failedTokens = [];
+                response.responses.forEach((resp, idx) => {
+                    if (!resp.success) {
+                        failedTokens.push(token_array[idx]);
+                    }
+                });
+                console.log('[FCM] Failed Token: ' + failedTokens);
+            }
+            //console.log('FCM Success')
+            return
+        });
 }
