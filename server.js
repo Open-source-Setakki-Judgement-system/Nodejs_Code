@@ -215,6 +215,7 @@ client.on('interactionCreate', (interaction) => {
             }
         }
         FcmMultiCast(message, target_tokens)
+        return interaction.reply("OK");
     }
     if (interaction.commandName === '재시작') {
         process.exit();
