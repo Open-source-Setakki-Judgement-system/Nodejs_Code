@@ -619,97 +619,55 @@ function StatusUpdate(id, state, type) {
                         console.log(error);
                         return;
                     }
-                    //console.log(results);
-                    //console.log(results.length);
-
-                    //해당되는 Token 배열형태로 저장
-                    for (let i = 0; i < results.length; i++) {
-                        target_tokens[i] = results[i].Token;
-                    }
-
-                    //해당되는 Token이 없다면 return
-                    if (target_tokens == 0) {
+                    if (results.length <= 0) {
                         console.log("[FCM] No push request (" + id + ")");
                         return
                     } else {
+                        for (let i = 0; i < results.length; i++) { //해당되는 Token 배열형태로 저장
+                            target_tokens[i] = results[i].Token;
+                        }
                         console.log("[FCM] Push Sent");
                         console.log("[FCM] " + target_tokens);
-
                         connection.query(`SELECT device_type FROM deviceStatus WHERE id = ?;`, [id], function (error, results) {
+                            var type_string = "";
                             if (results[0].device_type == "WASH") {
-                                //FCM 메시지 내용
-                                let message = {
-                                    notification: {
-                                        title: '세탁기 알림',
-                                        body: `${id}번 세탁기의 동작이 완료되었습니다.\r\n동작시간 : ${hour_diff}시간 ${minute_diff}분 ${second_diff}초`,
-                                    },
-                                    tokens: target_tokens,
-                                    android: {
-                                        priority: "high"
-                                    },
-                                    apns: {
-                                        payload: {
-                                            aps: {
-                                                contentAvailable: true,
-                                            }
-                                        }
-                                    }
-                                }
-
-                                //FCM 메시지 보내기
-                                fcm.messaging().sendMulticast(message)
-                                    .then((response) => {
-                                        if (response.failureCount > 0) {
-                                            const failedTokens = [];
-                                            response.responses.forEach((resp, idx) => {
-                                                if (!resp.success) {
-                                                    failedTokens.push(target_tokens[idx]);
-                                                }
-                                            });
-                                            console.log('[FCM] Failed Token: ' + failedTokens);
-                                        }
-                                        //console.log('FCM Success')
-                                        return
-                                    });
+                                type_string = "세탁기"
                             } else if (results[0].device_type == "DRY") {
-                                //FCM 메시지 내용
-                                let message = {
-                                    notification: {
-                                        title: '건조기 알림',
-                                        body: `${id}번 건조기의 동작이 완료되었습니다.\r\n동작시간 : ${hour_diff}시간 ${minute_diff}분 ${second_diff}초`,
-                                    },
-                                    tokens: target_tokens,
-                                    android: {
-                                        priority: "high"
-                                    },
-                                    apns: {
-                                        payload: {
-                                            aps: {
-                                                contentAvailable: true,
-                                            }
+                                type_string = "건조기"
+                            }
+                            let message = {
+                                notification: {
+                                    title: `${type_string} 알림`,
+                                    body: `${id}번 ${type_string}의 동작이 완료되었습니다.\r\n동작시간 : ${hour_diff}시간 ${minute_diff}분 ${second_diff}초`,
+                                },
+                                tokens: target_tokens,
+                                android: {
+                                    priority: "high"
+                                },
+                                apns: {
+                                    payload: {
+                                        aps: {
+                                            contentAvailable: true,
                                         }
                                     }
                                 }
-
-                                //FCM 메시지 보내기
-                                fcm.messaging().sendMulticast(message)
-                                    .then((response) => {
-                                        if (response.failureCount > 0) {
-                                            const failedTokens = [];
-                                            response.responses.forEach((resp, idx) => {
-                                                if (!resp.success) {
-                                                    failedTokens.push(target_tokens[idx]);
-                                                }
-                                            });
-                                            console.log('[FCM] Failed Token:' + failedTokens);
-                                        }
-                                        //console.log('FCM Success')
-                                        return
-                                    });
-
                             }
+                            //FCM 메시지 보내기
+                            fcm.messaging().sendMulticast(message)
+                                .then((response) => {
+                                    if (response.failureCount > 0) {
+                                        const failedTokens = [];
+                                        response.responses.forEach((resp, idx) => {
+                                            if (!resp.success) {
+                                                failedTokens.push(target_tokens[idx]);
+                                            }
+                                        });
+                                        console.log('[FCM] Failed Token: ' + failedTokens);
+                                    }
+                                    //console.log('FCM Success')
+                                    return
+                                });
                         });
-
                     }
                 });
 
