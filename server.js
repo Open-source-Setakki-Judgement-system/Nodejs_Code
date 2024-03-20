@@ -191,6 +191,31 @@ client.on('interactionCreate', (interaction) => {
             return interaction.reply("OK");
         }
     }
+    if (interaction.commandName === '수동푸시') {
+        var jsondata = interaction.options.get('input').value;
+        jsondata = JSON.parse(jsondata)
+        console.log("[Discord] Manual Push Alert:" + jsondata.Token + " " + jsondata.Title + " " + jsondata.Body);
+        let target_tokens = new Array();
+        target_tokens[0] = jsondata.Token
+        let message = {
+            notification: {
+                title: `${jsondata.Title}`,
+                body: `${jsondata.Body}`,
+            },
+            tokens: target_tokens,
+            android: {
+                priority: "high"
+            },
+            apns: {
+                payload: {
+                    aps: {
+                        contentAvailable: true,
+                    }
+                }
+            }
+        }
+        FcmMultiCast(message, target_tokens)
+    }
     if (interaction.commandName === '재시작') {
         process.exit();
     }
@@ -652,21 +677,7 @@ function StatusUpdate(id, state, type) {
                                     }
                                 }
                             }
-                            //FCM 메시지 보내기
-                            fcm.messaging().sendMulticast(message)
-                                .then((response) => {
-                                    if (response.failureCount > 0) {
-                                        const failedTokens = [];
-                                        response.responses.forEach((resp, idx) => {
-                                            if (!resp.success) {
-                                                failedTokens.push(target_tokens[idx]);
-                                            }
-                                        });
-                                        console.log('[FCM] Failed Token: ' + failedTokens);
-                                    }
-                                    //console.log('FCM Success')
-                                    return
-                                });
+                            FcmMultiCast(message, target_tokens)
                         });
                     }
                 });
@@ -684,4 +695,21 @@ function StatusUpdate(id, state, type) {
         });
     }
 
+}
+
+function FcmMultiCast(msg, token_array) {
+    fcm.messaging().sendMulticast(msg)
+        .then((response) => {
+            if (response.failureCount > 0) {
+                const failedTokens = [];
+                response.responses.forEach((resp, idx) => {
+                    if (!resp.success) {
+                        failedTokens.push(token_array[idx]);
+                    }
+                });
+                console.log('[FCM] Failed Token: ' + failedTokens);
+            }
+            //console.log('FCM Success')
+            return
+        });
 }

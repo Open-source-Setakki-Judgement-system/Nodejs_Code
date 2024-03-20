@@ -117,6 +117,18 @@ const commands = [
     ]
   },
   {
+    name: '수동푸시',
+    description: '해당 디바이스 토큰으로 푸시 알림을 보냅니다.',
+    options: [
+      {
+        name: 'input',
+        description: 'JSON 형태로 데이터를 입력받습니다. Key: Token, Title, Body',
+        type: ApplicationCommandOptionType.String,
+        required: true
+      }
+    ]
+  },
+  {
     name: '재시작',
     description: 'USE THIS AT YOUR OWN RISK.',
   }
