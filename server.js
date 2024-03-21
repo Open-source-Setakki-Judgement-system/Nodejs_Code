@@ -268,7 +268,7 @@ DeviceSocket.on('connection', (ws, request) => {//장치 Websocket
     if(DiscordConnected == 1)
     {
         const channel = client.channels.cache.get(credential.discord_channelid);
-        channel.send(`장치가 연결되었습니다. [HWID : "${request.headers['hwid']}", CH1 : "${request.headers['ch1']}", CH2 : "${request.headers['ch2']}"]`);
+        channel.send(`[${moment().format('HH:mm:ss')}] 장치가 연결되었습니다. [HWID : "${request.headers['hwid']}", CH1 : "${request.headers['ch1']}", CH2 : "${request.headers['ch2']}"]`);
     }
     let DeviceObject = new Object();
     DeviceObject.ws = ws;
@@ -366,7 +366,7 @@ DeviceSocket.on('connection', (ws, request) => {//장치 Websocket
 
     ws.on('close', () => {
         const channel = client.channels.cache.get(credential.discord_channelid);
-        channel.send(`장치의 연결이 끊어졌습니다. [HWID : "${request.headers['hwid']}", CH1 : "${request.headers['ch1']}", CH2 : "${request.headers['ch2']}"]<@&${credential.discord_roleid}>`);
+        channel.send(`[${moment().format('HH:mm:ss')}] 장치의 연결이 끊어졌습니다. [HWID : "${request.headers['hwid']}", CH1 : "${request.headers['ch1']}", CH2 : "${request.headers['ch2']}"]<@&${credential.discord_roleid}>`);
         console.log(`[Device][Disconnected] [${request.headers['hwid']},${request.headers['ch1']},${request.headers['ch2']}]`);
         ConnectedDevice.splice(ConnectedDevice.findIndex(obj => obj.hwid == request.headers['hwid']), 1);
         StatusUpdate(request.headers['ch1'], 2, 0)
@@ -575,7 +575,7 @@ function StatusUpdate(id, state, type) {
             device_status_str = "연결 끊어짐"
         }
         const channel = client.channels.cache.get(credential.discord_channelid);
-        channel.send(`${id}번 기기의 상태가 "${device_status_str}"으로 변경되었습니다.`);
+        channel.send(`[${moment().format('HH:mm:ss')}] ${id}번 기기의 상태가 "${device_status_str}"으로 변경되었습니다.`);
     }
     //기기상태 DB 업데이트
     connection.query(`UPDATE deviceStatus SET state = ? WHERE id = ?;`, [state, id], (error, results) => {
