@@ -563,7 +563,11 @@ function Sendto(HWID, data) {
 }
 
 function StatusUpdate(id, state, type) {
-    connection.query(`SELECT device_type FROM deviceStatus WHERE id = ?;`, [id], function (error, results) {
+    connection.query(`SELECT device_type, state FROM deviceStatus WHERE id = ?;`, [id], function (error, results) {
+        if(results[0].state == 3 && type == 0)
+        {
+            return;
+        }
         var type_string = "";
         if (results[0].device_type == "WASH") {
             type_string = "세탁기"
@@ -576,9 +580,10 @@ function StatusUpdate(id, state, type) {
                 device_status_str = "사용가능"
             } else if (state == 0) {
                 device_status_str = "작동중"
-            }
-            else if (state == 2) {
+            } else if (state == 2) {
                 device_status_str = "연결 끊어짐"
+            } else if (state == 3) {
+                device_status_str = "고장"
             }
             const channel = client.channels.cache.get(credential.discord_channelid);
             channel.send(`[${moment().format('HH:mm:ss')}] ${id}번 ${type_string}의 상태가 "${device_status_str}"으로 변경되었습니다.`);

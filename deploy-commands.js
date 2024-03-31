@@ -94,6 +94,10 @@ const commands = [
           {
             name: '연결 끊어짐',
             value: 2
+          },
+          {
+            name: '고장',
+            value: 3
           }
         ],
         required: true
