@@ -29,7 +29,7 @@ app.use(cors({
 }));
 app.use(rateLimit({
     windowMs: 1 * 60 * 1000,
-    max: 100
+    max: 30
 })
 );
 app.set('trust proxy', 1)
@@ -413,7 +413,11 @@ app.get("/get_log", (req, res) => {//로그 데이터
             console.log(error);
             return;
         }
-        res.send(JSON.parse(results[0].Log))
+        if (results[0].Log === undefined) {
+            res.sendStatus(404)
+        }else{
+            res.send(JSON.parse(results[0].Log))
+        }
         //console.log('==============================================')
     });
 });
