@@ -414,7 +414,7 @@ app.get("/get_log", (req, res) => {//로그 데이터
             return;
         }
         if (results[0].Log === undefined) {
-            res.sendStatus(404)
+            res.status(404).send('해당 로그가 존재하지 않습니다.')
         }else{
             res.send(JSON.parse(results[0].Log))
         }
