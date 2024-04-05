@@ -133,6 +133,18 @@ const commands = [
     ]
   },
   {
+    name: '공지추가',
+    description: '공지 게시판 내용을 추가합니다.',
+    options: [
+      {
+        name: 'input',
+        description: '제목|본문 형식으로 입력받습니다.',
+        type: ApplicationCommandOptionType.String,
+        required: true
+      }
+    ]
+  },
+  {
     name: '공지삭제',
     description: '공지 게시판 내용을 삭제합니다.',
     options: [
