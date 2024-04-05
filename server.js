@@ -217,6 +217,33 @@ client.on('interactionCreate', (interaction) => {
         FcmMultiCast(message, target_tokens)
         return interaction.reply("OK");
     }
+    if (interaction.commandName === '공지추가') {
+        const inputdata = interaction.options.get('input').value;
+        console.log("[Discord] Notice append");
+        const notice = inputdata.split('|')
+        connection.query(`INSERT INTO Notice (title, contents) VALUES (?, ?);`, [notice[0], notice[1]], (error, results) => {
+            if (error) {
+                console.log('INSERT INTO Notice query error:');
+                console.log(error);
+                return;
+            }
+            //console.log(results);
+        });
+        return interaction.reply("공지를 추가했습니다.");
+    }
+    if (interaction.commandName === '공지삭제') {
+        const notice_num = interaction.options.get('first-number').value;
+        console.log("[Discord] Notice delete:" + notice_num);
+        connection.query(`DELETE FROM Notice WHERE id = ?;`, [notice_num], (error, results) => {
+            if (error) {
+                console.log('DELETE INTO Notice query error:');
+                console.log(error);
+                return;
+            }
+            //console.log(results);
+        });
+        return interaction.reply("공지를 삭제했습니다.");
+    }
     if (interaction.commandName === '재시작') {
         process.exit();
     }
@@ -470,6 +497,18 @@ app.get("/app_ver_ios", (req, res) => {//앱 버전
     });
 });
 
+app.get("/notice", (req, res) => {//공지사항
+    connection.query(`SELECT * FROM Notice;`, function (error, results) {
+        if (error) {
+            console.log('SELECT * FROM Notice query error:');
+            console.log(error);
+            return;
+        }
+        res.send(results)
+        //console.log('==============================================')
+    });
+});
+
 app.post("/push_request", (req, res) => {//알림 신청 기능
     let token = req.body.token;
     let device_id = req.body.device_id;
@@ -567,11 +606,11 @@ function Sendto(HWID, data) {
 }
 
 function StatusUpdate(id, state, type) {
-    connection.query(`SELECT device_type, state FROM deviceStatus WHERE id = ?;`, [id], function (error, results) {
-        if(results[0].state == 3 && type == 0)
-        {
-            return;
-        }
+    if(id == 0)
+    {
+        return;
+    }
+    connection.query(`SELECT device_type FROM deviceStatus WHERE id = ?;`, [id], function (error, results) {
         var type_string = "";
         if (results[0].device_type == "WASH") {
             type_string = "세탁기"

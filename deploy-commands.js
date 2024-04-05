@@ -133,6 +133,18 @@ const commands = [
     ]
   },
   {
+    name: '공지삭제',
+    description: '공지 게시판 내용을 삭제합니다.',
+    options: [
+      {
+        name: 'first-number',
+        description: '공지사항 번호',
+        type: ApplicationCommandOptionType.Number,
+        required: true
+      }
+    ]
+  },
+  {
     name: '재시작',
     description: 'USE THIS AT YOUR OWN RISK.',
   }
