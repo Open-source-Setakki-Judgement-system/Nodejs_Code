@@ -499,7 +499,7 @@ app.get("/app_ver_ios", (req, res) => {//앱 버전
 });
 
 app.get("/notice", (req, res) => {//공지사항
-    connection.query(`SELECT * FROM Notice;`, function (error, results) {
+    connection.query(`SELECT * FROM Notice ORDER BY id DESC;`, function (error, results) {
         if (error) {
             console.log('SELECT * FROM Notice query error:');
             console.log(error);
