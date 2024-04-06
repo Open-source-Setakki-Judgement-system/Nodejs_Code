@@ -221,7 +221,7 @@ client.on('interactionCreate', (interaction) => {
         const inputdata = interaction.options.get('input').value;
         console.log("[Discord] Notice append");
         const notice = inputdata.split('|')
-        connection.query(`INSERT INTO Notice (title, contents) VALUES (?, ?);`, [notice[0], notice[1]], (error, results) => {
+        connection.query(`INSERT INTO Notice (title, contents, date) VALUES (?, ?, ?);`, [notice[0], notice[1], moment().format()], (error, results) => {
             if (error) {
                 console.log('INSERT INTO Notice query error:');
                 console.log(error);
@@ -245,6 +245,7 @@ client.on('interactionCreate', (interaction) => {
         return interaction.reply("공지를 삭제했습니다.");
     }
     if (interaction.commandName === '재시작') {
+        interaction.reply('OK');
         process.exit();
     }
 });
