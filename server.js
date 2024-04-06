@@ -66,6 +66,7 @@ const DeviceSocket = new wsModule.Server(
 var ConnectedDevice = [];
 var DeviceLog = [];
 var DiscordConnected = 0;
+var StatusCache = [];
 
 function heartbeat() {
     this.isAlive = true;
@@ -82,6 +83,12 @@ const connection = mysql.createConnection({
     database: credential.mysql_db,
     timezone: "+09:00"
 });
+
+if(StatusCache.length <= 0)
+{
+    CacheUpdate()
+    console.log(haha)
+}
 
 client.login(credential.discord_token);
 
@@ -463,9 +470,9 @@ app.get("/log_list", (req, res) => {//로그 목록
 });
 
 app.get("/device_list", (req, res) => {//장치 목록
-    connection.query(`SELECT * FROM deviceStatus;`, function (error, results) {
+    connection.query(`SELECT id, state, device_type FROM deviceStatus;`, function (error, results) {
         if (error) {
-            console.log('SELECT * FROM deviceStatus query error:');
+            console.log('SELECT id, state, device_type FROM deviceStatus query error:');
             console.log(error);
             return;
         }
@@ -607,6 +614,9 @@ function Sendto(HWID, data) {
 }
 
 function StatusUpdate(id, state, type) {
+    const device = StatusCache.find(device => device.id === id);
+    if(state != device.prev_state) 
+        console.log(hahaha)
     if(id == 0)
     {
         return;
@@ -633,7 +643,7 @@ function StatusUpdate(id, state, type) {
             channel.send(`[${moment().format('HH:mm:ss')}] ${id}번 ${type_string}의 상태가 "${device_status_str}"으로 변경되었습니다.`);
         }
         //기기상태 DB 업데이트
-        connection.query(`UPDATE deviceStatus SET state = ? WHERE id = ?;`, [state, id], (error, results) => {
+        connection.query(`UPDATE deviceStatus SET state = ?, prev_state = ? WHERE id = ?;`, [state, state, id], (error, results) => {
             if (error) {
                 console.log('deviceStatus Update query error:');
                 console.log(error);
@@ -652,9 +662,9 @@ function StatusUpdate(id, state, type) {
         });
 
         //Application과 Frontend에 현재 상태 DB 넘기기
-        connection.query(`SELECT * FROM deviceStatus WHERE id = ?;`, [id], function (error, results) {
+        connection.query(`SELECT id, state, device_type FROM deviceStatus WHERE id = ?;`, [id], function (error, results) {
             if (error) {
-                console.log('SELECT * FROM deviceStatus query error:');
+                console.log('SELECT id, state, device_type FROM deviceStatus query error:');
                 console.log(error);
                 return;
             }
@@ -760,4 +770,16 @@ function FcmMultiCast(msg, token_array) {
             //console.log('FCM Success')
             return
         });
+}
+
+function CacheUpdate()
+{
+    connection.query(`SELECT * FROM deviceStatus;`, function (error, results) {
+        if (error) {
+            console.log('SELECT id, state, device_type FROM deviceStatus query error:');
+            console.log(error);
+            return;
+        }
+        StatusCache = JSON.parse(results[0]);
+    });
 }
