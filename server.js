@@ -221,7 +221,7 @@ client.on('interactionCreate', (interaction) => {
         const inputdata = interaction.options.get('input').value;
         console.log("[Discord] Notice append");
         const notice = inputdata.split('|')
-        connection.query(`INSERT INTO Notice (title, contents, date) VALUES (?, ?, ?);`, [notice[0], notice[1], moment().format()], (error, results) => {
+        connection.query(`INSERT INTO Notice (title, contents, date) VALUES (?, ?, ?);`, [notice[0], notice[1], moment().format('YYYY-MM-DD HH:mm:ss')], (error, results) => {
             if (error) {
                 console.log('INSERT INTO Notice query error:');
                 console.log(error);
