@@ -66,7 +66,7 @@ const DeviceSocket = new wsModule.Server(
 var ConnectedDevice = [];
 var DeviceLog = [];
 var DiscordConnected = 0;
-var StatusCache = 0;
+let StatusCache = new Array();
 
 function heartbeat() {
     this.isAlive = true;
@@ -84,7 +84,7 @@ const connection = mysql.createConnection({
     timezone: "+09:00"
 });
 
-if(StatusCache == 0)
+if(StatusCache.length <= 0)
 {
     CacheUpdate()
     console.log("haha")
@@ -781,7 +781,9 @@ function CacheUpdate()
             console.log(error);
             return;
         }
-        StatusCache = results[0];
+        for (let i = 0; i < results.length; i++) { //해당되는 Token 배열형태로 저장
+            StatusCache[i] = results[i];
+        }
         console.log(StatusCache)
     });
 }
