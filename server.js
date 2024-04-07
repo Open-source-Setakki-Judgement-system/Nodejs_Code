@@ -87,7 +87,7 @@ const connection = mysql.createConnection({
 if(StatusCache.length <= 0)
 {
     CacheUpdate()
-    console.log(haha)
+    console.log("haha")
 }
 
 client.login(credential.discord_token);
@@ -616,7 +616,7 @@ function Sendto(HWID, data) {
 function StatusUpdate(id, state, type) {
     const device = StatusCache.find(device => device.id === id);
     if(state != device.prev_state) 
-        console.log(hahaha)
+        console.log("hahaha")
     if(id == 0)
     {
         return;
