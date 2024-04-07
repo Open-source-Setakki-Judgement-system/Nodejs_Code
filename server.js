@@ -84,7 +84,7 @@ const connection = mysql.createConnection({
     timezone: "+09:00"
 });
 
-if(StatusCache.length <= 0)
+if(StatusCache == 0)
 {
     CacheUpdate()
     console.log(StatusCache)
