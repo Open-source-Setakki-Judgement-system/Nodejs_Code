@@ -615,9 +615,10 @@ function Sendto(HWID, data) {
 }
 
 function StatusUpdate(id, state, type) {
-    const device = StatusCache.find(device => device.id === id);
-    if(state != device.prev_state) 
-        console.log("hahaha")
+
+    //const device = StatusCache.find(device => device.id === id);
+    //if(state != device.prev_state) 
+    //    console.log("hahaha")
     if(id == 0)
     {
         return;
