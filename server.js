@@ -87,7 +87,6 @@ const connection = mysql.createConnection({
 if(StatusCache == 0)
 {
     CacheUpdate()
-    console.log(StatusCache)
     console.log("haha")
 }
 
@@ -783,5 +782,6 @@ function CacheUpdate()
             return;
         }
         StatusCache = results[0];
+        console.log(StatusCache)
     });
 }
