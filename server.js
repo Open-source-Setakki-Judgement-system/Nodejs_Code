@@ -29,7 +29,7 @@ app.use(cors({
 }));
 app.use(rateLimit({
     windowMs: 1 * 60 * 1000,
-    max: 100
+    max: 30
 })
 );
 app.set('trust proxy', 1)
@@ -66,6 +66,7 @@ const DeviceSocket = new wsModule.Server(
 var ConnectedDevice = [];
 var DeviceLog = [];
 var DiscordConnected = 0;
+var StatusCache = [];
 
 function heartbeat() {
     this.isAlive = true;
@@ -82,6 +83,12 @@ const connection = mysql.createConnection({
     database: credential.mysql_db,
     timezone: "+09:00"
 });
+
+if(StatusCache.length <= 0)
+{
+    CacheUpdate()
+    console.log(haha)
+}
 
 client.login(credential.discord_token);
 
@@ -217,7 +224,35 @@ client.on('interactionCreate', (interaction) => {
         FcmMultiCast(message, target_tokens)
         return interaction.reply("OK");
     }
+    if (interaction.commandName === '공지추가') {
+        const inputdata = interaction.options.get('input').value;
+        console.log("[Discord] Notice append");
+        const notice = inputdata.split('|')
+        connection.query(`INSERT INTO Notice (title, contents, date) VALUES (?, ?, ?);`, [notice[0], notice[1], moment().format('YYYY-MM-DD HH:mm:ss')], (error, results) => {
+            if (error) {
+                console.log('INSERT INTO Notice query error:');
+                console.log(error);
+                return;
+            }
+            //console.log(results);
+        });
+        return interaction.reply("공지를 추가했습니다.");
+    }
+    if (interaction.commandName === '공지삭제') {
+        const notice_num = interaction.options.get('first-number').value;
+        console.log("[Discord] Notice delete:" + notice_num);
+        connection.query(`DELETE FROM Notice WHERE id = ?;`, [notice_num], (error, results) => {
+            if (error) {
+                console.log('DELETE INTO Notice query error:');
+                console.log(error);
+                return;
+            }
+            //console.log(results);
+        });
+        return interaction.reply("공지를 삭제했습니다.");
+    }
     if (interaction.commandName === '재시작') {
+        interaction.reply('OK');
         process.exit();
     }
 });
@@ -268,7 +303,7 @@ DeviceSocket.on('connection', (ws, request) => {//장치 Websocket
     if(DiscordConnected == 1)
     {
         const channel = client.channels.cache.get(credential.discord_channelid);
-        channel.send(`장치가 연결되었습니다. [HWID : "${request.headers['hwid']}", CH1 : "${request.headers['ch1']}", CH2 : "${request.headers['ch2']}"]`);
+        channel.send(`[${moment().format('HH:mm:ss')}] 장치가 연결되었습니다. [HWID : "${request.headers['hwid']}", CH1 : "${request.headers['ch1']}", CH2 : "${request.headers['ch2']}"]`);
     }
     let DeviceObject = new Object();
     DeviceObject.ws = ws;
@@ -366,7 +401,7 @@ DeviceSocket.on('connection', (ws, request) => {//장치 Websocket
 
     ws.on('close', () => {
         const channel = client.channels.cache.get(credential.discord_channelid);
-        channel.send(`장치의 연결이 끊어졌습니다. [HWID : "${request.headers['hwid']}", CH1 : "${request.headers['ch1']}", CH2 : "${request.headers['ch2']}"]<@&${credential.discord_roleid}>`);
+        channel.send(`[${moment().format('HH:mm:ss')}] 장치의 연결이 끊어졌습니다. [HWID : "${request.headers['hwid']}", CH1 : "${request.headers['ch1']}", CH2 : "${request.headers['ch2']}"]<@&${credential.discord_roleid}>`);
         console.log(`[Device][Disconnected] [${request.headers['hwid']},${request.headers['ch1']},${request.headers['ch2']}]`);
         ConnectedDevice.splice(ConnectedDevice.findIndex(obj => obj.hwid == request.headers['hwid']), 1);
         StatusUpdate(request.headers['ch1'], 2, 0)
@@ -413,7 +448,11 @@ app.get("/get_log", (req, res) => {//로그 데이터
             console.log(error);
             return;
         }
-        res.send(JSON.parse(results[0].Log))
+        if (results.length <= 0) {
+            res.status(404).send('해당 로그가 존재하지 않습니다.')
+        }else{
+            res.send(JSON.parse(results[0].Log))
+        }
         //console.log('==============================================')
     });
 });
@@ -431,9 +470,9 @@ app.get("/log_list", (req, res) => {//로그 목록
 });
 
 app.get("/device_list", (req, res) => {//장치 목록
-    connection.query(`SELECT * FROM deviceStatus;`, function (error, results) {
+    connection.query(`SELECT id, state, device_type FROM deviceStatus;`, function (error, results) {
         if (error) {
-            console.log('SELECT * FROM deviceStatus query error:');
+            console.log('SELECT id, state, device_type FROM deviceStatus query error:');
             console.log(error);
             return;
         }
@@ -462,6 +501,18 @@ app.get("/app_ver_ios", (req, res) => {//앱 버전
             return;
         }
         res.send(results[0])
+        //console.log('==============================================')
+    });
+});
+
+app.get("/notice", (req, res) => {//공지사항
+    connection.query(`SELECT * FROM Notice ORDER BY id DESC;`, function (error, results) {
+        if (error) {
+            console.log('SELECT * FROM Notice query error:');
+            console.log(error);
+            return;
+        }
+        res.send(results)
         //console.log('==============================================')
     });
 });
@@ -563,54 +614,36 @@ function Sendto(HWID, data) {
 }
 
 function StatusUpdate(id, state, type) {
-    if(DiscordConnected == 1 && type == 1)
+    const device = StatusCache.find(device => device.id === id);
+    if(state != device.prev_state) 
+        console.log(hahaha)
+    if(id == 0)
     {
-        let device_status_str
-        if (state == 1) {
-            device_status_str = "사용가능"
-        } else if (state == 0) {
-            device_status_str = "작동중"
-        }
-        else if (state == 2) {
-            device_status_str = "연결 끊어짐"
-        }
-        const channel = client.channels.cache.get(credential.discord_channelid);
-        channel.send(`${id}번 기기의 상태가 "${device_status_str}"으로 변경되었습니다.`);
+        return;
     }
-    //기기상태 DB 업데이트
-    connection.query(`UPDATE deviceStatus SET state = ? WHERE id = ?;`, [state, id], (error, results) => {
-        if (error) {
-            console.log('deviceStatus Update query error:');
-            console.log(error);
-            return;
+    connection.query(`SELECT device_type FROM deviceStatus WHERE id = ?;`, [id], function (error, results) {
+        var type_string = "";
+        if (results[0].device_type == "WASH") {
+            type_string = "세탁기"
+        } else if (results[0].device_type == "DRY") {
+            type_string = "건조기"
         }
-        //console.log(results);
-    });
-    //푸시알림 DB 업데이트
-    connection.query(`UPDATE PushAlert SET state = ? WHERE device_id = ?;`, [state, id], (error, results) => {
-        if (error) {
-            console.log('deviceStatus Update query error:');
-            console.log(error);
-            return;
+        if (DiscordConnected == 1 && type == 1) {
+            let device_status_str
+            if (state == 1) {
+                device_status_str = "사용가능"
+            } else if (state == 0) {
+                device_status_str = "작동중"
+            } else if (state == 2) {
+                device_status_str = "연결 끊어짐"
+            } else if (state == 3) {
+                device_status_str = "고장"
+            }
+            const channel = client.channels.cache.get(credential.discord_channelid);
+            channel.send(`[${moment().format('HH:mm:ss')}] ${id}번 ${type_string}의 상태가 "${device_status_str}"으로 변경되었습니다.`);
         }
-        //console.log(results);
-    });
-
-    //Application과 Frontend에 현재 상태 DB 넘기기
-    connection.query(`SELECT * FROM deviceStatus WHERE id = ?;`, [id], function (error, results) {
-        if (error) {
-            console.log('SELECT * FROM deviceStatus query error:');
-            console.log(error);
-            return;
-        }
-        ClientSocket.clients.forEach(function (client) {
-            client.send(JSON.stringify(results[0]));
-        });
-    });
-
-    if (state == 0 && type == 1)//ON
-    {
-        connection.query(`UPDATE deviceStatus SET ON_time = ? WHERE id = ?;`, [moment().format(), id], (error, results) => {
+        //기기상태 DB 업데이트
+        connection.query(`UPDATE deviceStatus SET state = ?, prev_state = ? WHERE id = ?;`, [state, state, id], (error, results) => {
             if (error) {
                 console.log('deviceStatus Update query error:');
                 console.log(error);
@@ -618,49 +651,74 @@ function StatusUpdate(id, state, type) {
             }
             //console.log(results);
         });
-    } else if (state == 1 && type == 1) {//OFF
-        connection.query(`UPDATE deviceStatus SET OFF_time = ? WHERE id = ?;`, [moment().format(), id], (error, results) => {
+        //푸시알림 DB 업데이트
+        connection.query(`UPDATE PushAlert SET state = ? WHERE device_id = ?;`, [state, id], (error, results) => {
             if (error) {
                 console.log('deviceStatus Update query error:');
                 console.log(error);
                 return;
             }
+            //console.log(results);
+        });
 
-            connection.query(`SELECT ON_time, OFF_time FROM deviceStatus WHERE id = ?;`, [id], function (error, results) {
+        //Application과 Frontend에 현재 상태 DB 넘기기
+        connection.query(`SELECT id, state, device_type FROM deviceStatus WHERE id = ?;`, [id], function (error, results) {
+            if (error) {
+                console.log('SELECT id, state, device_type FROM deviceStatus query error:');
+                console.log(error);
+                return;
+            }
+            ClientSocket.clients.forEach(function (client) {
+                client.send(JSON.stringify(results[0]));
+            });
+        });
+
+        if (state == 0 && type == 1)//ON
+        {
+            connection.query(`UPDATE deviceStatus SET ON_time = ? WHERE id = ?;`, [moment().format(), id], (error, results) => {
                 if (error) {
-                    console.log('SELECT Token query error:');
+                    console.log('deviceStatus Update query error:');
                     console.log(error);
                     return;
                 }
-                let hour_diff = moment(results[0].OFF_time).diff(results[0].ON_time, 'hours')
-                let minute_diff = moment(results[0].OFF_time).diff(results[0].ON_time, 'minutes') - (hour_diff * 60)
-                let second_diff = moment(results[0].OFF_time).diff(results[0].ON_time, 'seconds') - (minute_diff * 60) - (hour_diff * 3600)
-                console.log("[Device] Time " + hour_diff + "/" + minute_diff + "/" + second_diff)
+                //console.log(results);
+            });
+        } else if (state == 1 && type == 1) {//OFF
+            connection.query(`UPDATE deviceStatus SET OFF_time = ? WHERE id = ?;`, [moment().format(), id], (error, results) => {
+                if (error) {
+                    console.log('deviceStatus Update query error:');
+                    console.log(error);
+                    return;
+                }
 
-                //알림신청 Token 조회해서 FCM 메시지 보내기
-                connection.query(`SELECT Token FROM PushAlert WHERE device_id = ? AND Expect_Status = ?;`, [id, state], function (error, results) {
-                    let target_tokens = new Array();
+                connection.query(`SELECT ON_time, OFF_time FROM deviceStatus WHERE id = ?;`, [id], function (error, results) {
                     if (error) {
                         console.log('SELECT Token query error:');
                         console.log(error);
                         return;
                     }
-                    if (results.length <= 0) {
-                        console.log("[FCM] No push request (" + id + ")");
-                        return
-                    } else {
-                        for (let i = 0; i < results.length; i++) { //해당되는 Token 배열형태로 저장
-                            target_tokens[i] = results[i].Token;
+                    let hour_diff = moment(results[0].OFF_time).diff(results[0].ON_time, 'hours')
+                    let minute_diff = moment(results[0].OFF_time).diff(results[0].ON_time, 'minutes') - (hour_diff * 60)
+                    let second_diff = moment(results[0].OFF_time).diff(results[0].ON_time, 'seconds') - (minute_diff * 60) - (hour_diff * 3600)
+                    console.log("[Device] Time " + hour_diff + "/" + minute_diff + "/" + second_diff)
+
+                    //알림신청 Token 조회해서 FCM 메시지 보내기
+                    connection.query(`SELECT Token FROM PushAlert WHERE device_id = ? AND Expect_Status = ?;`, [id, state], function (error, results) {
+                        let target_tokens = new Array();
+                        if (error) {
+                            console.log('SELECT Token query error:');
+                            console.log(error);
+                            return;
                         }
-                        console.log("[FCM] Push Sent");
-                        console.log("[FCM] " + target_tokens);
-                        connection.query(`SELECT device_type FROM deviceStatus WHERE id = ?;`, [id], function (error, results) {
-                            var type_string = "";
-                            if (results[0].device_type == "WASH") {
-                                type_string = "세탁기"
-                            } else if (results[0].device_type == "DRY") {
-                                type_string = "건조기"
+                        if (results.length <= 0) {
+                            console.log("[FCM] No push request (" + id + ")");
+                            return
+                        } else {
+                            for (let i = 0; i < results.length; i++) { //해당되는 Token 배열형태로 저장
+                                target_tokens[i] = results[i].Token;
                             }
+                            console.log("[FCM] Push Sent");
+                            console.log("[FCM] " + target_tokens);
                             let message = {
                                 notification: {
                                     title: `${type_string} 알림`,
@@ -679,23 +737,22 @@ function StatusUpdate(id, state, type) {
                                 }
                             }
                             FcmMultiCast(message, target_tokens)
-                        });
-                    }
-                });
+                        }
+                    });
 
-                //FCM 메시지 보낸 Token 제거
-                connection.query(`DELETE FROM PushAlert WHERE device_id = ? AND Expect_Status = ?;`, [id, state], function (error, results) {
-                    if (error) {
-                        console.log('DELETE Token query error:');
-                        console.log(error);
-                        return;
-                    }
-                    //console.log(results);
-                });
-            })
-        });
-    }
-
+                    //FCM 메시지 보낸 Token 제거
+                    connection.query(`DELETE FROM PushAlert WHERE device_id = ? AND Expect_Status = ?;`, [id, state], function (error, results) {
+                        if (error) {
+                            console.log('DELETE Token query error:');
+                            console.log(error);
+                            return;
+                        }
+                        //console.log(results);
+                    });
+                })
+            });
+        }
+    });
 }
 
 function FcmMultiCast(msg, token_array) {
@@ -713,4 +770,16 @@ function FcmMultiCast(msg, token_array) {
             //console.log('FCM Success')
             return
         });
+}
+
+function CacheUpdate()
+{
+    connection.query(`SELECT * FROM deviceStatus;`, function (error, results) {
+        if (error) {
+            console.log('SELECT id, state, device_type FROM deviceStatus query error:');
+            console.log(error);
+            return;
+        }
+        StatusCache = JSON.parse(results[0]);
+    });
 }

@@ -94,6 +94,10 @@ const commands = [
           {
             name: '연결 끊어짐',
             value: 2
+          },
+          {
+            name: '고장',
+            value: 3
           }
         ],
         required: true
@@ -124,6 +128,30 @@ const commands = [
         name: 'input',
         description: 'JSON 형태로 데이터를 입력받습니다. Key: Token, Title, Body',
         type: ApplicationCommandOptionType.String,
+        required: true
+      }
+    ]
+  },
+  {
+    name: '공지추가',
+    description: '공지 게시판 내용을 추가합니다.',
+    options: [
+      {
+        name: 'input',
+        description: '제목|본문 형식으로 입력받습니다.',
+        type: ApplicationCommandOptionType.String,
+        required: true
+      }
+    ]
+  },
+  {
+    name: '공지삭제',
+    description: '공지 게시판 내용을 삭제합니다.',
+    options: [
+      {
+        name: 'first-number',
+        description: '공지사항 번호',
+        type: ApplicationCommandOptionType.Number,
         required: true
       }
     ]
