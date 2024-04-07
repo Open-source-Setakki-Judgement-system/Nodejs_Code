@@ -66,7 +66,7 @@ const DeviceSocket = new wsModule.Server(
 var ConnectedDevice = [];
 var DeviceLog = [];
 var DiscordConnected = 0;
-var StatusCache = [];
+var StatusCache = 0;
 
 function heartbeat() {
     this.isAlive = true;
@@ -87,6 +87,7 @@ const connection = mysql.createConnection({
 if(StatusCache.length <= 0)
 {
     CacheUpdate()
+    console.log(StatusCache)
     console.log("haha")
 }
 
