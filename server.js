@@ -780,6 +780,6 @@ function CacheUpdate()
             console.log(error);
             return;
         }
-        StatusCache = JSON.parse(results[0]);
+        StatusCache = results[0];
     });
 }
