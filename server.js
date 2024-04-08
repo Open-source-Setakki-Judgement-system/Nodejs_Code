@@ -651,7 +651,7 @@ function StatusUpdate(id, state) {
                 //console.log(results);
                 CacheUpdate(id)
                 ClientSocket.clients.forEach(function (client) {
-                    client.send(StatusCache[id-1]);
+                    client.send(JSON.stringify(StatusCache[id-1]));
                 });
             });
             //푸시알림 DB 업데이트
