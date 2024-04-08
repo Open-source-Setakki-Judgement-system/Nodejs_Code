@@ -650,8 +650,9 @@ function StatusUpdate(id, state) {
                 }
                 //console.log(results);
                 CacheUpdate(id)
+                const jsondata = JSON.stringify(StatusCache[id-1], ['id', 'state', 'device_type'])
                 ClientSocket.clients.forEach(function (client) {
-                    client.send(JSON.stringify(StatusCache[id-1]));
+                    client.send(jsondata);
                 });
             });
             //푸시알림 DB 업데이트
@@ -664,17 +665,19 @@ function StatusUpdate(id, state) {
                 //console.log(results);
             });
 
-            // //Application과 Frontend에 현재 상태 DB 넘기기
-            // connection.query(`SELECT id, state, device_type FROM deviceStatus WHERE id = ?;`, [id], function (error, results) {
-            //     if (error) {
-            //         console.log('SELECT id, state, device_type FROM deviceStatus query error:');
-            //         console.log(error);
-            //         return;
-            //     }
-            //     ClientSocket.clients.forEach(function (client) {
-            //         client.send(JSON.stringify(results[0]));
-            //     });
-            // });
+            /*
+            //Application과 Frontend에 현재 상태 DB 넘기기
+            connection.query(`SELECT id, state, device_type FROM deviceStatus WHERE id = ?;`, [id], function (error, results) {
+                if (error) {
+                    console.log('SELECT id, state, device_type FROM deviceStatus query error:');
+                    console.log(error);
+                    return;
+                }
+                ClientSocket.clients.forEach(function (client) {
+                    client.send(JSON.stringify(results[0]));
+                });
+            });
+            */
 
             if (state == 0)//ON
             {
