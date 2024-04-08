@@ -782,6 +782,6 @@ function CacheUpdate()
         for (let i = 0; i < results.length; i++) {
             StatusCache[i] = results[i];
         }
-        console.log(StatusCache[1])
+        console.log(StatusCache[1].prev_state)
     });
 }
