@@ -614,12 +614,12 @@ function Sendto(HWID, data) {
 }
 
 function StatusUpdate(id, state, type) {
-    if(state != StatusCache[id-1].prev_state) 
-       console.log("hahaha")
     if(id == 0)
     {
         return;
     }
+    if(state != StatusCache[id-1].prev_state) 
+       console.log("hahaha")
     connection.query(`SELECT device_type FROM deviceStatus WHERE id = ?;`, [id], function (error, results) {
         var type_string = "";
         if (results[0].device_type == "WASH") {
@@ -782,6 +782,5 @@ function CacheUpdate()
         for (let i = 0; i < results.length; i++) {
             StatusCache[i] = results[i];
         }
-        console.log(StatusCache[1].prev_state)
     });
 }
