@@ -621,62 +621,38 @@ function StatusUpdate(id, state, type) {
         return;
     }
     else {
-        var type_string = "";
-        if (StatusCache[id - 1].device_type == "WASH") {
-            type_string = "세탁기"
-        } else if (StatusCache[id - 1].device_type == "DRY") {
-            type_string = "건조기"
-        }
-        if (DiscordConnected == 1 && type == 1) {
-            let device_status_str
-            if (state == 1) {
-                device_status_str = "사용가능"
-            } else if (state == 0) {
-                device_status_str = "작동중"
-            } else if (state == 2) {
-                device_status_str = "연결 끊어짐"
-            } else if (state == 3) {
-                device_status_str = "고장"
+            var type_string = "";
+            if (StatusCache[id - 1].device_type == "WASH") {
+                type_string = "세탁기"
+            } else if (StatusCache[id - 1].device_type == "DRY") {
+                type_string = "건조기"
             }
-            const channel = client.channels.cache.get(credential.discord_channelid);
-            channel.send(`[${moment().format('HH:mm:ss')}] ${id}번 ${type_string}의 상태가 "${device_status_str}"으로 변경되었습니다.`);
-        }
-        //기기상태 DB 업데이트
-        connection.query(`UPDATE deviceStatus SET state = ?, prev_state = ? WHERE id = ?;`, [state, state, id], (error, results) => {
-            if (error) {
-                console.log('deviceStatus Update query error:');
-                console.log(error);
-                return;
+            if (DiscordConnected == 1 && type == 1) {
+                let device_status_str
+                if (state == 1) {
+                    device_status_str = "사용가능"
+                } else if (state == 0) {
+                    device_status_str = "작동중"
+                } else if (state == 2) {
+                    device_status_str = "연결 끊어짐"
+                } else if (state == 3) {
+                    device_status_str = "고장"
+                }
+                const channel = client.channels.cache.get(credential.discord_channelid);
+                channel.send(`[${moment().format('HH:mm:ss')}] ${id}번 ${type_string}의 상태가 "${device_status_str}"으로 변경되었습니다.`);
             }
-            //console.log(results);
-            CacheUpdate(id)
-            ClientSocket.clients.forEach(function (client) {
-                client.send(JSON.stringify(StatusCache[id - 1]));
+            //기기상태 DB 업데이트
+            connection.query(`UPDATE deviceStatus SET state = ?, prev_state = ? WHERE id = ?;`, [state, state, id], (error, results) => {
+                if (error) {
+                    console.log('deviceStatus Update query error:');
+                    console.log(error);
+                    return;
+                }
+                //console.log(results);
+                CacheUpdate(id)
             });
-        });
-        //푸시알림 DB 업데이트
-        connection.query(`UPDATE PushAlert SET state = ? WHERE device_id = ?;`, [state, id], (error, results) => {
-            if (error) {
-                console.log('deviceStatus Update query error:');
-                console.log(error);
-                return;
-            }
-            //console.log(results);
-        });
-
-        // //Application과 Frontend에 현재 상태 DB 넘기기
-        // connection.query(`SELECT id, state, device_type FROM deviceStatus WHERE id = ?;`, [id], function (error, results) {
-        //     if (error) {
-        //         console.log('SELECT id, state, device_type FROM deviceStatus query error:');
-        //         console.log(error);
-        //         return;
-        //     }
-
-        // });
-
-        if (state == 0 && type == 1)//ON
-        {
-            connection.query(`UPDATE deviceStatus SET ON_time = ? WHERE id = ?;`, [moment().format(), id], (error, results) => {
+            //푸시알림 DB 업데이트
+            connection.query(`UPDATE PushAlert SET state = ? WHERE device_id = ?;`, [state, id], (error, results) => {
                 if (error) {
                     console.log('deviceStatus Update query error:');
                     console.log(error);
@@ -684,75 +660,98 @@ function StatusUpdate(id, state, type) {
                 }
                 //console.log(results);
             });
-        } else if (state == 1 && type == 1) {//OFF
-            connection.query(`UPDATE deviceStatus SET OFF_time = ? WHERE id = ?;`, [moment().format(), id], (error, results) => {
+
+            //Application과 Frontend에 현재 상태 DB 넘기기
+            connection.query(`SELECT id, state, device_type FROM deviceStatus WHERE id = ?;`, [id], function (error, results) {
                 if (error) {
-                    console.log('deviceStatus Update query error:');
+                    console.log('SELECT id, state, device_type FROM deviceStatus query error:');
                     console.log(error);
                     return;
                 }
+                ClientSocket.clients.forEach(function (client) {
+                    client.send(JSON.stringify(results[0]));
+                });
+            });
 
-                connection.query(`SELECT ON_time, OFF_time FROM deviceStatus WHERE id = ?;`, [id], function (error, results) {
+            if (state == 0 && type == 1)//ON
+            {
+                connection.query(`UPDATE deviceStatus SET ON_time = ? WHERE id = ?;`, [moment().format(), id], (error, results) => {
                     if (error) {
-                        console.log('SELECT Token query error:');
+                        console.log('deviceStatus Update query error:');
                         console.log(error);
                         return;
                     }
-                    let hour_diff = moment(results[0].OFF_time).diff(results[0].ON_time, 'hours')
-                    let minute_diff = moment(results[0].OFF_time).diff(results[0].ON_time, 'minutes') - (hour_diff * 60)
-                    let second_diff = moment(results[0].OFF_time).diff(results[0].ON_time, 'seconds') - (minute_diff * 60) - (hour_diff * 3600)
-                    console.log("[Device] Time " + hour_diff + "/" + minute_diff + "/" + second_diff)
+                    //console.log(results);
+                });
+            } else if (state == 1 && type == 1) {//OFF
+                connection.query(`UPDATE deviceStatus SET OFF_time = ? WHERE id = ?;`, [moment().format(), id], (error, results) => {
+                    if (error) {
+                        console.log('deviceStatus Update query error:');
+                        console.log(error);
+                        return;
+                    }
 
-                    //알림신청 Token 조회해서 FCM 메시지 보내기
-                    connection.query(`SELECT Token FROM PushAlert WHERE device_id = ? AND Expect_Status = ?;`, [id, state], function (error, results) {
-                        let target_tokens = new Array();
+                    connection.query(`SELECT ON_time, OFF_time FROM deviceStatus WHERE id = ?;`, [id], function (error, results) {
                         if (error) {
                             console.log('SELECT Token query error:');
                             console.log(error);
                             return;
                         }
-                        if (results.length <= 0) {
-                            console.log("[FCM] No push request (" + id + ")");
-                            return
-                        } else {
-                            for (let i = 0; i < results.length; i++) { //해당되는 Token 배열형태로 저장
-                                target_tokens[i] = results[i].Token;
+                        let hour_diff = moment(results[0].OFF_time).diff(results[0].ON_time, 'hours')
+                        let minute_diff = moment(results[0].OFF_time).diff(results[0].ON_time, 'minutes') - (hour_diff * 60)
+                        let second_diff = moment(results[0].OFF_time).diff(results[0].ON_time, 'seconds') - (minute_diff * 60) - (hour_diff * 3600)
+                        console.log("[Device] Time " + hour_diff + "/" + minute_diff + "/" + second_diff)
+
+                        //알림신청 Token 조회해서 FCM 메시지 보내기
+                        connection.query(`SELECT Token FROM PushAlert WHERE device_id = ? AND Expect_Status = ?;`, [id, state], function (error, results) {
+                            let target_tokens = new Array();
+                            if (error) {
+                                console.log('SELECT Token query error:');
+                                console.log(error);
+                                return;
                             }
-                            console.log("[FCM] Push Sent");
-                            console.log("[FCM] " + target_tokens);
-                            let message = {
-                                notification: {
-                                    title: `${type_string} 알림`,
-                                    body: `${id}번 ${type_string}의 동작이 완료되었습니다.\r\n동작시간 : ${hour_diff}시간 ${minute_diff}분 ${second_diff}초`,
-                                },
-                                tokens: target_tokens,
-                                android: {
-                                    priority: "high"
-                                },
-                                apns: {
-                                    payload: {
-                                        aps: {
-                                            contentAvailable: true,
+                            if (results.length <= 0) {
+                                console.log("[FCM] No push request (" + id + ")");
+                                return
+                            } else {
+                                for (let i = 0; i < results.length; i++) { //해당되는 Token 배열형태로 저장
+                                    target_tokens[i] = results[i].Token;
+                                }
+                                console.log("[FCM] Push Sent");
+                                console.log("[FCM] " + target_tokens);
+                                let message = {
+                                    notification: {
+                                        title: `${type_string} 알림`,
+                                        body: `${id}번 ${type_string}의 동작이 완료되었습니다.\r\n동작시간 : ${hour_diff}시간 ${minute_diff}분 ${second_diff}초`,
+                                    },
+                                    tokens: target_tokens,
+                                    android: {
+                                        priority: "high"
+                                    },
+                                    apns: {
+                                        payload: {
+                                            aps: {
+                                                contentAvailable: true,
+                                            }
                                         }
                                     }
                                 }
+                                FcmMultiCast(message, target_tokens)
                             }
-                            FcmMultiCast(message, target_tokens)
-                        }
-                    });
+                        });
 
-                    //FCM 메시지 보낸 Token 제거
-                    connection.query(`DELETE FROM PushAlert WHERE device_id = ? AND Expect_Status = ?;`, [id, state], function (error, results) {
-                        if (error) {
-                            console.log('DELETE Token query error:');
-                            console.log(error);
-                            return;
-                        }
-                        //console.log(results);
-                    });
-                })
-            });
-        }
+                        //FCM 메시지 보낸 Token 제거
+                        connection.query(`DELETE FROM PushAlert WHERE device_id = ? AND Expect_Status = ?;`, [id, state], function (error, results) {
+                            if (error) {
+                                console.log('DELETE Token query error:');
+                                console.log(error);
+                                return;
+                            }
+                            //console.log(results);
+                        });
+                    })
+                });
+            }
     }
 }
 
