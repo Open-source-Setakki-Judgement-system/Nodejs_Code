@@ -86,7 +86,7 @@ const connection = mysql.createConnection({
 
 if(StatusCache.length <= 0)
 {
-    CacheUpdate()
+    CacheUpdate(0)
     console.log("haha")
 }
 
@@ -614,17 +614,17 @@ function Sendto(HWID, data) {
 }
 
 function StatusUpdate(id, state, type) {
-    if(id == 0)
-    {
+    if (id == 0) {
         return;
     }
-    if(state != StatusCache[id-1].prev_state) 
-       console.log("hahaha")
-    connection.query(`SELECT device_type FROM deviceStatus WHERE id = ?;`, [id], function (error, results) {
+    if (state == StatusCache[id - 1].prev_state) {
+        return;
+    }
+    else {
         var type_string = "";
-        if (results[0].device_type == "WASH") {
+        if (StatusCache[id - 1].device_type == "WASH") {
             type_string = "세탁기"
-        } else if (results[0].device_type == "DRY") {
+        } else if (StatusCache[id - 1].device_type == "DRY") {
             type_string = "건조기"
         }
         if (DiscordConnected == 1 && type == 1) {
@@ -649,6 +649,10 @@ function StatusUpdate(id, state, type) {
                 return;
             }
             //console.log(results);
+            CacheUpdate(id)
+            ClientSocket.clients.forEach(function (client) {
+                client.send(JSON.stringify(StatusCache[id - 1]));
+            });
         });
         //푸시알림 DB 업데이트
         connection.query(`UPDATE PushAlert SET state = ? WHERE device_id = ?;`, [state, id], (error, results) => {
@@ -660,17 +664,15 @@ function StatusUpdate(id, state, type) {
             //console.log(results);
         });
 
-        //Application과 Frontend에 현재 상태 DB 넘기기
-        connection.query(`SELECT id, state, device_type FROM deviceStatus WHERE id = ?;`, [id], function (error, results) {
-            if (error) {
-                console.log('SELECT id, state, device_type FROM deviceStatus query error:');
-                console.log(error);
-                return;
-            }
-            ClientSocket.clients.forEach(function (client) {
-                client.send(JSON.stringify(results[0]));
-            });
-        });
+        // //Application과 Frontend에 현재 상태 DB 넘기기
+        // connection.query(`SELECT id, state, device_type FROM deviceStatus WHERE id = ?;`, [id], function (error, results) {
+        //     if (error) {
+        //         console.log('SELECT id, state, device_type FROM deviceStatus query error:');
+        //         console.log(error);
+        //         return;
+        //     }
+
+        // });
 
         if (state == 0 && type == 1)//ON
         {
@@ -751,7 +753,7 @@ function StatusUpdate(id, state, type) {
                 })
             });
         }
-    });
+    }
 }
 
 function FcmMultiCast(msg, token_array) {
@@ -771,16 +773,27 @@ function FcmMultiCast(msg, token_array) {
         });
 }
 
-function CacheUpdate()
-{
-    connection.query(`SELECT * FROM deviceStatus;`, function (error, results) {
-        if (error) {
-            console.log('SELECT id, state, device_type FROM deviceStatus query error:');
-            console.log(error);
-            return;
-        }
-        for (let i = 0; i < results.length; i++) {
-            StatusCache[i] = results[i];
-        }
-    });
+function CacheUpdate(device_id) {
+    if (device_id == 0) {
+        connection.query(`SELECT id, state, prev_state, device_type FROM deviceStatus;`, function (error, results) {
+            if (error) {
+                console.log('SELECT id, state, device_type FROM deviceStatus query error:');
+                console.log(error);
+                return;
+            }
+            for (let i = 0; i < results.length; i++) {
+                StatusCache[i] = results[i];
+            }
+        });
+    } else {
+        connection.query(`SELECT id, state, prev_state, device_type FROM deviceStatus WHERE id = ?;`, [device_id], function (error, results) {
+            if (error) {
+                console.log('SELECT id, state, device_type FROM deviceStatus query error:');
+                console.log(error);
+                return;
+            }
+            StatusCache[device_id - 1] = results[0];
+        });
+    }
+
 }
