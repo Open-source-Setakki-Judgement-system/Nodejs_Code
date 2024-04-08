@@ -676,7 +676,7 @@ function StatusUpdate(id, state) {
             //     });
             // });
 
-            if (state == 0 && type == 1)//ON
+            if (state == 0)//ON
             {
                 connection.query(`UPDATE deviceStatus SET ON_time = ? WHERE id = ?;`, [moment().format(), id], (error, results) => {
                     if (error) {
@@ -686,7 +686,7 @@ function StatusUpdate(id, state) {
                     }
                     //console.log(results);
                 });
-            } else if (state == 1 && type == 1) {//OFF
+            } else if (state == 1) {//OFF
                 connection.query(`UPDATE deviceStatus SET OFF_time = ? WHERE id = ?;`, [moment().format(), id], (error, results) => {
                     if (error) {
                         console.log('deviceStatus Update query error:');
