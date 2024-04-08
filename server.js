@@ -613,7 +613,7 @@ function Sendto(HWID, data) {
     ConnectedDevice[arr_index].ws.send(data);
 }
 
-function StatusUpdate(id, state, type) {
+function StatusUpdate(id, state) {
     if (id == 0) {
         return;
     }
@@ -627,7 +627,7 @@ function StatusUpdate(id, state, type) {
             } else if (StatusCache[id - 1].device_type == "DRY") {
                 type_string = "건조기"
             }
-            if (DiscordConnected == 1 && type == 1) {
+            if (DiscordConnected == 1) {
                 let device_status_str
                 if (state == 1) {
                     device_status_str = "사용가능"
@@ -650,6 +650,9 @@ function StatusUpdate(id, state, type) {
                 }
                 //console.log(results);
                 CacheUpdate(id)
+                ClientSocket.clients.forEach(function (client) {
+                    client.send(JSON.stringify(StatusCache[id-1]));
+                });
             });
             //푸시알림 DB 업데이트
             connection.query(`UPDATE PushAlert SET state = ? WHERE device_id = ?;`, [state, id], (error, results) => {
@@ -661,17 +664,17 @@ function StatusUpdate(id, state, type) {
                 //console.log(results);
             });
 
-            //Application과 Frontend에 현재 상태 DB 넘기기
-            connection.query(`SELECT id, state, device_type FROM deviceStatus WHERE id = ?;`, [id], function (error, results) {
-                if (error) {
-                    console.log('SELECT id, state, device_type FROM deviceStatus query error:');
-                    console.log(error);
-                    return;
-                }
-                ClientSocket.clients.forEach(function (client) {
-                    client.send(JSON.stringify(results[0]));
-                });
-            });
+            // //Application과 Frontend에 현재 상태 DB 넘기기
+            // connection.query(`SELECT id, state, device_type FROM deviceStatus WHERE id = ?;`, [id], function (error, results) {
+            //     if (error) {
+            //         console.log('SELECT id, state, device_type FROM deviceStatus query error:');
+            //         console.log(error);
+            //         return;
+            //     }
+            //     ClientSocket.clients.forEach(function (client) {
+            //         client.send(JSON.stringify(results[0]));
+            //     });
+            // });
 
             if (state == 0 && type == 1)//ON
             {
@@ -785,7 +788,7 @@ function CacheUpdate(device_id) {
             }
         });
     } else {
-        connection.query(`SELECT id, state, prev_state, device_type FROM deviceStatus WHERE id = ?;`, [device_id], function (error, results) {
+        connection.query(`SELECT id, state, device_type, prev_state FROM deviceStatus WHERE id = ?;`, [device_id], function (error, results) {
             if (error) {
                 console.log('SELECT id, state, device_type FROM deviceStatus query error:');
                 console.log(error);
