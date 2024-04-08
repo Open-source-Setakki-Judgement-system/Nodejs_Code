@@ -66,7 +66,6 @@ const DeviceSocket = new wsModule.Server(
 var ConnectedDevice = [];
 var DeviceLog = [];
 var DiscordConnected = 0;
-var StatusCache = [];
 
 function heartbeat() {
     this.isAlive = true;
@@ -83,12 +82,6 @@ const connection = mysql.createConnection({
     database: credential.mysql_db,
     timezone: "+09:00"
 });
-
-if(StatusCache.length <= 0)
-{
-    CacheUpdate()
-    console.log(haha)
-}
 
 client.login(credential.discord_token);
 
@@ -614,9 +607,6 @@ function Sendto(HWID, data) {
 }
 
 function StatusUpdate(id, state, type) {
-    const device = StatusCache.find(device => device.id === id);
-    if(state != device.prev_state) 
-        console.log(hahaha)
     if(id == 0)
     {
         return;
@@ -770,16 +760,4 @@ function FcmMultiCast(msg, token_array) {
             //console.log('FCM Success')
             return
         });
-}
-
-function CacheUpdate()
-{
-    connection.query(`SELECT * FROM deviceStatus;`, function (error, results) {
-        if (error) {
-            console.log('SELECT id, state, device_type FROM deviceStatus query error:');
-            console.log(error);
-            return;
-        }
-        StatusCache = JSON.parse(results[0]);
-    });
 }
