@@ -614,10 +614,8 @@ function Sendto(HWID, data) {
 }
 
 function StatusUpdate(id, state, type) {
-
-    //const device = StatusCache.find(device => device.id === id);
-    //if(state != device.prev_state) 
-    //    console.log("hahaha")
+    if(state != StatusCache[id-1].prev_state) 
+       console.log("hahaha")
     if(id == 0)
     {
         return;
@@ -781,7 +779,7 @@ function CacheUpdate()
             console.log(error);
             return;
         }
-        for (let i = 0; i < results.length; i++) { //해당되는 Token 배열형태로 저장
+        for (let i = 0; i < results.length; i++) {
             StatusCache[i] = results[i];
         }
         console.log(StatusCache)
