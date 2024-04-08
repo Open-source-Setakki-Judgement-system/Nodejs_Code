@@ -651,7 +651,7 @@ function StatusUpdate(id, state) {
                 //console.log(results);
                 CacheUpdate(id)
                 ClientSocket.clients.forEach(function (client) {
-                    client.send(JSON.stringify(StatusCache[id-1]));
+                    client.send(StatusCache[id-1]);
                 });
             });
             //푸시알림 DB 업데이트
@@ -777,7 +777,7 @@ function FcmMultiCast(msg, token_array) {
 
 function CacheUpdate(device_id) {
     if (device_id == 0) {
-        connection.query(`SELECT id, state, prev_state, device_type FROM deviceStatus;`, function (error, results) {
+        connection.query(`SELECT id, state, device_type, prev_state FROM deviceStatus;`, function (error, results) {
             if (error) {
                 console.log('SELECT id, state, device_type FROM deviceStatus query error:');
                 console.log(error);
