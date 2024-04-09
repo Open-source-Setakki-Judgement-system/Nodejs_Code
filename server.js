@@ -408,7 +408,7 @@ const device_Pinginterval = setInterval(function ping() {//장치 Heartbeat
         ws.isAlive = false;
         ws.ping();
     });
-}, 20000);
+}, 15000);
 
 const client_Pinginterval = setInterval(function ping() {//클라이언트 Heartbeat
     ClientSocket.clients.forEach(function each(ws) {
