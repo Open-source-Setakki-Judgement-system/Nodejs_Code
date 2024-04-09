@@ -404,7 +404,11 @@ DeviceSocket.on('connection', (ws, request) => {//장치 Websocket
 
 const device_Pinginterval = setInterval(function ping() {//장치 Heartbeat
     DeviceSocket.clients.forEach(function each(ws) {
-        if (ws.isAlive === false) return ws.terminate();
+        if (ws.isAlive === false)
+        {
+            console.log("heartbeat failed")
+            return ws.terminate();
+        }
         ws.isAlive = false;
         ws.ping();
     });
