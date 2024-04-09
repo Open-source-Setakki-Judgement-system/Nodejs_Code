@@ -269,7 +269,7 @@ https.on('upgrade', function upgrade(request, socket, head) {
         } else {
             const prev_device_index = ConnectedDevice.findIndex((item) => item.hwid == request.headers['hwid']);
             if (prev_device_index != -1) {
-                ConnectedDevice[prev_device_index].ws.close();
+                ConnectedDevice[prev_device_index].ws.terminate();
                 ConnectedDevice.splice(prev_device_index, 1);
             }else{
                 DeviceSocket.handleUpgrade(request, socket, head, function done(ws) {
