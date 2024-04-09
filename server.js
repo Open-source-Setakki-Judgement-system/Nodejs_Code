@@ -392,9 +392,9 @@ DeviceSocket.on('connection', (ws, request) => {//장치 Websocket
         }
     })
 
-    ws.on('close', () => {
+    ws.on('close', (code, reason) => {
         const channel = client.channels.cache.get(credential.discord_channelid);
-        channel.send(`[${moment().format('HH:mm:ss')}] 장치의 연결이 끊어졌습니다. [HWID : "${request.headers['hwid']}", CH1 : "${request.headers['ch1']}", CH2 : "${request.headers['ch2']}"]<@&${credential.discord_roleid}>`);
+        channel.send(`[${moment().format('HH:mm:ss')}] 장치의 연결이 끊어졌습니다. [HWID : "${request.headers['hwid']}", CH1 : "${request.headers['ch1']}", CH2 : "${request.headers['ch2']}"] ${code},${reason} <@&${credential.discord_roleid}>`);
         console.log(`[Device][Disconnected] [${request.headers['hwid']},${request.headers['ch1']},${request.headers['ch2']}]`);
         ConnectedDevice.splice(ConnectedDevice.findIndex(obj => obj.hwid == request.headers['hwid']), 1);
         StatusUpdate(request.headers['ch1'], 2, 0)
