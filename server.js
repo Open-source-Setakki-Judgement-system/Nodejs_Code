@@ -13,15 +13,15 @@ const rateLimit = require('express-rate-limit');
 const url = require('url');
 const { AsciiTable3, AlignmentEnum } = require('ascii-table3');
 
-const { Client, IntentsBitField, EmbedBuilder  } = require('discord.js');
-const client = new Client({
-    intents: [
-        IntentsBitField.Flags.Guilds,
-        IntentsBitField.Flags.GuildMembers,
-        IntentsBitField.Flags.GuildMessages,
-        IntentsBitField.Flags.MessageContent,
-    ],
-});
+// const { Client, IntentsBitField, EmbedBuilder  } = require('discord.js');
+// const client = new Client({
+//     intents: [
+//         IntentsBitField.Flags.Guilds,
+//         IntentsBitField.Flags.GuildMembers,
+//         IntentsBitField.Flags.GuildMessages,
+//         IntentsBitField.Flags.MessageContent,
+//     ],
+// });
 
 const app = express()
 app.use(cors({
@@ -98,163 +98,163 @@ const connection = mysql.createConnection({
 //     }
 // });
 
-client.on('interactionCreate', (interaction) => {
-    if (!interaction.isChatInputCommand()) return;
+// client.on('interactionCreate', (interaction) => {
+//     if (!interaction.isChatInputCommand()) return;
 
-    if (interaction.commandName === '앱버전') {
-        var system
-        if(interaction.options.get('first-number').value == 0)
-        {
-            system = "android";
-        }else
-        {
-            system = "ios";
-        }
-        const version = interaction.options.get('input').value;
-        console.log("[Discord] App Version Changed:" + system + " " + version);
-        connection.query(`UPDATE app_version SET version = ? WHERE os_system = ?;`, [version, system], (error, results) => {
-            if (error) {
-                console.log('app_version Update query error:');
-                console.log(error);
-                return;
-            }
-            //console.log(results);
-        });
-        return interaction.reply('앱 버전이 변경되었습니다.');
-    }
-    if (interaction.commandName === '스토어') {
-        var system
-        var store_status
-        if(interaction.options.get('first-number').value == 0)
-        {
-            system = "android";
-        }else
-        {
-            system = "ios";
-        }
-        if(interaction.options.get('second-number').value == 0)
-        {
-            store_status = "0";
-        }else
-        {
-            store_status = "1";
-        }
-        console.log("[Discord] APP Store Status Changed:" + system + " " + store_status);
-        connection.query(`UPDATE app_version SET store_status = ? WHERE os_system = ?;`, [store_status, system], (error, results) => {
-            if (error) {
-                console.log('app_store Update query error:');
-                console.log(error);
-                return;
-            }
-            //console.log(results);
-        });
-        return interaction.reply('스토어 등록 여부가 변경되었습니다.');
-    }
-    if (interaction.commandName === '상태변경') {
-        const device_no = interaction.options.get('first-number').value;
-        const device_status = interaction.options.get('second-number').value;
-        console.log("[Discord] Status Updated Device_NO:" + device_no + " Data:" + device_status);
-        StatusUpdate(device_no, device_status, 1)
-        return interaction.reply('OK');
-    }
-    if (interaction.commandName === '연결목록') {
-        if (ConnectedDevice.length == 0) {
-            return interaction.reply("연결된 장치가 없습니다.");
-        }
-        else {
-            var table = new AsciiTable3(`장치 ${ConnectedDevice.length}대 연결됨`)
-                .setHeading('HWID', 'CH1', 'CH2')
-                .setAligns(AlignmentEnum.LEFT)
-            ConnectedDevice.sort(function (a, b) {
-                return a.hwid - b.hwid;
-            });
-            for (let i = 0; i < ConnectedDevice.length; i++) {
-                table.addRow(ConnectedDevice[i].hwid, ConnectedDevice[i].ch1, ConnectedDevice[i].ch2)
-            }
-            return interaction.reply(table.toString());
-        }
-    }
-    if (interaction.commandName === '상태확인') {
-        const device_no = interaction.options.get('first-number').value;
-        if (ConnectedDevice.length == 0) {
-            return interaction.reply("연결된 장치가 없습니다.");
-        }
-        else {
-            if (ConnectedDevice.findIndex(obj => obj.hwid == device_no) < 0)
-            {
-                return interaction.reply("연결되지 않은 장치입니다.");
-            }
-            let DataObject = new Object();
-            DataObject.title = "GetData"
-            DataObject.data = "Status"
-            Sendto(device_no, JSON.stringify(DataObject))
-            return interaction.reply("OK");
-        }
-    }
-    if (interaction.commandName === '수동푸시') {
-        var jsondata = interaction.options.get('input').value;
-        jsondata = JSON.parse(jsondata)
-        console.log("[Discord] Manual Push Alert:" + jsondata.Token + " " + jsondata.Title + " " + jsondata.Body);
-        let target_tokens = new Array();
-        target_tokens[0] = jsondata.Token
-        let message = {
-            notification: {
-                title: `${jsondata.Title}`,
-                body: `${jsondata.Body}`,
-            },
-            tokens: target_tokens,
-            android: {
-                priority: "high"
-            },
-            apns: {
-                payload: {
-                    aps: {
-                        contentAvailable: true,
-                    }
-                }
-            }
-        }
-        //FcmMultiCast(message, target_tokens)
-        return interaction.reply("OK");
-    }
-    if (interaction.commandName === '공지추가') {
-        const inputdata = interaction.options.get('input').value;
-        console.log("[Discord] Notice append");
-        const notice = inputdata.split('|')
-        connection.query(`INSERT INTO Notice (title, contents, date) VALUES (?, ?, ?);`, [notice[0], notice[1], moment().format('YYYY-MM-DD HH:mm:ss')], (error, results) => {
-            if (error) {
-                console.log('INSERT INTO Notice query error:');
-                console.log(error);
-                return;
-            }
-            //console.log(results);
-        });
-        return interaction.reply("공지를 추가했습니다.");
-    }
-    if (interaction.commandName === '공지삭제') {
-        const notice_num = interaction.options.get('first-number').value;
-        console.log("[Discord] Notice delete:" + notice_num);
-        connection.query(`DELETE FROM Notice WHERE id = ?;`, [notice_num], (error, results) => {
-            if (error) {
-                console.log('DELETE INTO Notice query error:');
-                console.log(error);
-                return;
-            }
-            //console.log(results);
-        });
-        return interaction.reply("공지를 삭제했습니다.");
-    }
-    if (interaction.commandName === '재시작') {
-        interaction.reply('OK');
-        process.exit();
-    }
-});
+//     if (interaction.commandName === '앱버전') {
+//         var system
+//         if(interaction.options.get('first-number').value == 0)
+//         {
+//             system = "android";
+//         }else
+//         {
+//             system = "ios";
+//         }
+//         const version = interaction.options.get('input').value;
+//         console.log("[Discord] App Version Changed:" + system + " " + version);
+//         connection.query(`UPDATE app_version SET version = ? WHERE os_system = ?;`, [version, system], (error, results) => {
+//             if (error) {
+//                 console.log('app_version Update query error:');
+//                 console.log(error);
+//                 return;
+//             }
+//             //console.log(results);
+//         });
+//         return interaction.reply('앱 버전이 변경되었습니다.');
+//     }
+//     if (interaction.commandName === '스토어') {
+//         var system
+//         var store_status
+//         if(interaction.options.get('first-number').value == 0)
+//         {
+//             system = "android";
+//         }else
+//         {
+//             system = "ios";
+//         }
+//         if(interaction.options.get('second-number').value == 0)
+//         {
+//             store_status = "0";
+//         }else
+//         {
+//             store_status = "1";
+//         }
+//         console.log("[Discord] APP Store Status Changed:" + system + " " + store_status);
+//         connection.query(`UPDATE app_version SET store_status = ? WHERE os_system = ?;`, [store_status, system], (error, results) => {
+//             if (error) {
+//                 console.log('app_store Update query error:');
+//                 console.log(error);
+//                 return;
+//             }
+//             //console.log(results);
+//         });
+//         return interaction.reply('스토어 등록 여부가 변경되었습니다.');
+//     }
+//     if (interaction.commandName === '상태변경') {
+//         const device_no = interaction.options.get('first-number').value;
+//         const device_status = interaction.options.get('second-number').value;
+//         console.log("[Discord] Status Updated Device_NO:" + device_no + " Data:" + device_status);
+//         StatusUpdate(device_no, device_status, 1)
+//         return interaction.reply('OK');
+//     }
+//     if (interaction.commandName === '연결목록') {
+//         if (ConnectedDevice.length == 0) {
+//             return interaction.reply("연결된 장치가 없습니다.");
+//         }
+//         else {
+//             var table = new AsciiTable3(`장치 ${ConnectedDevice.length}대 연결됨`)
+//                 .setHeading('HWID', 'CH1', 'CH2')
+//                 .setAligns(AlignmentEnum.LEFT)
+//             ConnectedDevice.sort(function (a, b) {
+//                 return a.hwid - b.hwid;
+//             });
+//             for (let i = 0; i < ConnectedDevice.length; i++) {
+//                 table.addRow(ConnectedDevice[i].hwid, ConnectedDevice[i].ch1, ConnectedDevice[i].ch2)
+//             }
+//             return interaction.reply(table.toString());
+//         }
+//     }
+//     if (interaction.commandName === '상태확인') {
+//         const device_no = interaction.options.get('first-number').value;
+//         if (ConnectedDevice.length == 0) {
+//             return interaction.reply("연결된 장치가 없습니다.");
+//         }
+//         else {
+//             if (ConnectedDevice.findIndex(obj => obj.hwid == device_no) < 0)
+//             {
+//                 return interaction.reply("연결되지 않은 장치입니다.");
+//             }
+//             let DataObject = new Object();
+//             DataObject.title = "GetData"
+//             DataObject.data = "Status"
+//             Sendto(device_no, JSON.stringify(DataObject))
+//             return interaction.reply("OK");
+//         }
+//     }
+//     if (interaction.commandName === '수동푸시') {
+//         var jsondata = interaction.options.get('input').value;
+//         jsondata = JSON.parse(jsondata)
+//         console.log("[Discord] Manual Push Alert:" + jsondata.Token + " " + jsondata.Title + " " + jsondata.Body);
+//         let target_tokens = new Array();
+//         target_tokens[0] = jsondata.Token
+//         let message = {
+//             notification: {
+//                 title: `${jsondata.Title}`,
+//                 body: `${jsondata.Body}`,
+//             },
+//             tokens: target_tokens,
+//             android: {
+//                 priority: "high"
+//             },
+//             apns: {
+//                 payload: {
+//                     aps: {
+//                         contentAvailable: true,
+//                     }
+//                 }
+//             }
+//         }
+//         //FcmMultiCast(message, target_tokens)
+//         return interaction.reply("OK");
+//     }
+//     if (interaction.commandName === '공지추가') {
+//         const inputdata = interaction.options.get('input').value;
+//         console.log("[Discord] Notice append");
+//         const notice = inputdata.split('|')
+//         connection.query(`INSERT INTO Notice (title, contents, date) VALUES (?, ?, ?);`, [notice[0], notice[1], moment().format('YYYY-MM-DD HH:mm:ss')], (error, results) => {
+//             if (error) {
+//                 console.log('INSERT INTO Notice query error:');
+//                 console.log(error);
+//                 return;
+//             }
+//             //console.log(results);
+//         });
+//         return interaction.reply("공지를 추가했습니다.");
+//     }
+//     if (interaction.commandName === '공지삭제') {
+//         const notice_num = interaction.options.get('first-number').value;
+//         console.log("[Discord] Notice delete:" + notice_num);
+//         connection.query(`DELETE FROM Notice WHERE id = ?;`, [notice_num], (error, results) => {
+//             if (error) {
+//                 console.log('DELETE INTO Notice query error:');
+//                 console.log(error);
+//                 return;
+//             }
+//             //console.log(results);
+//         });
+//         return interaction.reply("공지를 삭제했습니다.");
+//     }
+//     if (interaction.commandName === '재시작') {
+//         interaction.reply('OK');
+//         process.exit();
+//     }
+// });
 
-client.on('ready', (c) => {
-    console.log(`${c.user.tag} is online.`);
-});
+// client.on('ready', (c) => {
+//     console.log(`${c.user.tag} is online.`);
+// });
 
-client.login(credential.discord_token);
+// client.login(credential.discord_token);
 
 https.on('upgrade', function upgrade(request, socket, head) {
     const { pathname } = url.parse(request.url);
@@ -469,8 +469,8 @@ app.get("/log_list", (req, res) => {//로그 목록
 app.get("/device_list", (req, res) => {//장치 목록
     const room_no = req.query.room_no;
     const layer = req.query.layer;
-    var table_name = "Room"
-    table_name = table_name + room_no.toString() + "-" + layer.toString()
+    var table_name = ""
+    table_name = room_no.toString() + "_" + layer.toString()
     connection.query(`SELECT id, state, device_type FROM FROM ?;`, [table_name], function (error, results) {
         if (error) {
             console.log('SELECT * FROM deviceStatus query error:');
