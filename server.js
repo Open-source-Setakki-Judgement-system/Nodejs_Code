@@ -467,11 +467,13 @@ app.get("/log_list", (req, res) => {//로그 목록
 });
 
 app.get("/device_list", (req, res) => {//장치 목록
-    const room_no = req.query.room_no;
-    const layer = req.query.layer;
+    var room_no = 1
+    var layer = 1
+    room_no = req.query.room_no;
+    layer = req.query.layer;
     var table_name = ""
     table_name = room_no.toString() + "_" + layer.toString()
-    connection.query(`SELECT id, state, device_type FROM FROM ?;`, [table_name], function (error, results) {
+    connection.query(`SELECT id, state, device_type FROM ?;`, [table_name], function (error, results) {
         if (error) {
             console.log('SELECT * FROM deviceStatus query error:');
             console.log(error);
