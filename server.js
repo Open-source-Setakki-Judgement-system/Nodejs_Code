@@ -473,9 +473,9 @@ app.get("/device_list", (req, res) => {//장치 목록
     layer = req.query.layer;
 
     switch (room_no) {
-        case 1:
-        case 2:
-        case 3:
+        case '1':
+        case '2':
+        case '3':
             break;
         default:
             res.status(404).send('잘못된 요청입니다.')
@@ -483,8 +483,8 @@ app.get("/device_list", (req, res) => {//장치 목록
     }
     
     switch (layer) {
-        case 1:
-        case 2:
+        case '1':
+        case '2':
             break;
         default:
             res.status(404).send('잘못된 요청입니다.')
