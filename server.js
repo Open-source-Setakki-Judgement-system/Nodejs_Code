@@ -3,7 +3,7 @@ const serAccount = require('./firebase_token.json')
 const express = require('express')
 const cors = require('cors')
 const mysql = require('mysql');
-const fcm = require('firebase-admin')
+//const fcm = require('firebase-admin')
 const fs = require('fs');
 const moment = require("moment");
 const schedule = require('node-schedule');
@@ -71,9 +71,9 @@ function heartbeat() {
     this.isAlive = true;
 }
 
-fcm.initializeApp({
-    credential: fcm.credential.cert(serAccount),
-})
+// fcm.initializeApp({
+//     credential: fcm.credential.cert(serAccount),
+// })
 
 const connection = mysql.createConnection({
     host: credential.mysql_host,
@@ -83,20 +83,20 @@ const connection = mysql.createConnection({
     timezone: "+09:00"
 });
 
-client.login(credential.discord_token);
+// client.login(credential.discord_token);
 
-client.on('ready', (c) => {
-    console.log(`${c.user.tag} is online.`);
-    const channel = client.channels.cache.get(credential.discord_channelid);
-    channel.send(`Hell World`);
-    DiscordConnected = 1;
-});
+// client.on('ready', (c) => {
+//     console.log(`${c.user.tag} is online.`);
+//     const channel = client.channels.cache.get(credential.discord_channelid);
+//     channel.send(`Hell World`);
+//     DiscordConnected = 1;
+// });
 
-client.on('messageCreate', (message) => {
-    if (message.author.bot) {
-        return;
-    }
-});
+// client.on('messageCreate', (message) => {
+//     if (message.author.bot) {
+//         return;
+//     }
+// });
 
 client.on('interactionCreate', (interaction) => {
     if (!interaction.isChatInputCommand()) return;
@@ -214,7 +214,7 @@ client.on('interactionCreate', (interaction) => {
                 }
             }
         }
-        FcmMultiCast(message, target_tokens)
+        //FcmMultiCast(message, target_tokens)
         return interaction.reply("OK");
     }
     if (interaction.commandName === '공지추가') {
@@ -734,7 +734,7 @@ function StatusUpdate(id, state, type) {
                                     }
                                 }
                             }
-                            FcmMultiCast(message, target_tokens)
+                            //FcmMultiCast(message, target_tokens)
                         }
                     });
 
@@ -753,19 +753,19 @@ function StatusUpdate(id, state, type) {
     });
 }
 
-function FcmMultiCast(msg, token_array) {
-    fcm.messaging().sendMulticast(msg)
-        .then((response) => {
-            if (response.failureCount > 0) {
-                const failedTokens = [];
-                response.responses.forEach((resp, idx) => {
-                    if (!resp.success) {
-                        failedTokens.push(token_array[idx]);
-                    }
-                });
-                console.log('[FCM] Failed Token: ' + failedTokens);
-            }
-            //console.log('FCM Success')
-            return
-        });
-}
+// function FcmMultiCast(msg, token_array) {
+//     fcm.messaging().sendMulticast(msg)
+//         .then((response) => {
+//             if (response.failureCount > 0) {
+//                 const failedTokens = [];
+//                 response.responses.forEach((resp, idx) => {
+//                     if (!resp.success) {
+//                         failedTokens.push(token_array[idx]);
+//                     }
+//                 });
+//                 console.log('[FCM] Failed Token: ' + failedTokens);
+//             }
+//             //console.log('FCM Success')
+//             return
+//         });
+// }
