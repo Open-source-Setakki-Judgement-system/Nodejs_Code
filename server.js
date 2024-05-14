@@ -473,7 +473,8 @@ app.get("/device_list", (req, res) => {//장치 목록
     layer = req.query.layer;
     var table_name = ""
     table_name = room_no.toString() + "_" + layer.toString()
-    connection.query(`SELECT id, state, device_type FROM ?;`, [table_name], function (error, results) {
+    const query = `SELECT id, state, device_type FROM ${table_name};`;
+    connection.query(query, function (error, results) {
         if (error) {
             console.log('SELECT * FROM deviceStatus query error:');
             console.log(error);
