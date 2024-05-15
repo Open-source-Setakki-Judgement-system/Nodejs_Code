@@ -467,34 +467,7 @@ app.get("/log_list", (req, res) => {//로그 목록
 });
 
 app.get("/device_list", (req, res) => {//장치 목록
-    var room_no = 1
-    var layer = 1
-    room_no = req.query.room_no;
-    layer = req.query.layer;
-
-    switch (room_no) {
-        case '1':
-        case '2':
-        case '3':
-            break;
-        default:
-            res.status(404).send('잘못된 요청입니다.')
-            return;
-    }
-    
-    switch (layer) {
-        case '1':
-        case '2':
-            break;
-        default:
-            res.status(404).send('잘못된 요청입니다.')
-            return;
-    }
-
-    var table_name = ""
-    table_name = room_no.toString() + "_" + layer.toString()
-    const query = `SELECT id, state, device_type FROM ${table_name};`;
-    connection.query(query, function (error, results) {
+    connection.query(`SELECT id, view_id, state, device_type FROM deviceStatus;`, function (error, results) {
         if (error) {
             console.log('SELECT * FROM deviceStatus query error:');
             console.log(error);
