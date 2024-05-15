@@ -637,7 +637,7 @@ function StatusUpdate(id, state, type) {
             channel.send(`[${moment().format('HH:mm:ss')}] ${id}번 ${type_string}의 상태가 "${device_status_str}"으로 변경되었습니다.`);
         }
         //기기상태 DB 업데이트
-        connection.query(`UPDATE deviceStatus SET state = ?, prev_state = ? WHERE id = ?;`, [state, state, id], (error, results) => {
+        connection.query(`UPDATE deviceStatus SET state = ? WHERE id = ?;`, [state, id], (error, results) => {
             if (error) {
                 console.log('deviceStatus Update query error:');
                 console.log(error);
