@@ -661,6 +661,7 @@ function StatusUpdate(id, state, type) {
             channel.send(`[${moment().format('HH:mm:ss')}] ${id}번 ${type_string}의 상태가 "${device_status_str}"으로 변경되었습니다.`);
         }
         //기기상태 DB 업데이트
+        //임시
         connection.query(`UPDATE deviceStatus SET state = ?, prev_state = ? WHERE id = ?;`, [state, state, id], (error, results) => {
             if (error) {
                 console.log('deviceStatus Update query error:');
@@ -669,6 +670,16 @@ function StatusUpdate(id, state, type) {
             }
             //console.log(results);
         });
+
+        connection.query(`UPDATE boy_device SET state = ?, prev_state = ? WHERE id = ?;`, [state, state, id], (error, results) => {
+            if (error) {
+                console.log('deviceStatus Update query error:');
+                console.log(error);
+                return;
+            }
+            //console.log(results);
+        });
+
         //푸시알림 DB 업데이트
         connection.query(`UPDATE PushAlert SET state = ? WHERE device_id = ?;`, [state, id], (error, results) => {
             if (error) {
@@ -701,7 +712,22 @@ function StatusUpdate(id, state, type) {
                 }
                 //console.log(results);
             });
+            connection.query(`UPDATE boy_device SET ON_time = ? WHERE id = ?;`, [moment().format(), id], (error, results) => {
+                if (error) {
+                    console.log('deviceStatus Update query error:');
+                    console.log(error);
+                    return;
+                }
+                //console.log(results);
+            });
         } else if (state == 1 && type == 1) {//OFF
+            connection.query(`UPDATE boy_device SET OFF_time = ? WHERE id = ?;`, [moment().format(), id], (error, results) => {
+                if (error) {
+                    console.log('deviceStatus Update query error:');
+                    console.log(error);
+                    return;
+                }
+            })
             connection.query(`UPDATE deviceStatus SET OFF_time = ? WHERE id = ?;`, [moment().format(), id], (error, results) => {
                 if (error) {
                     console.log('deviceStatus Update query error:');
