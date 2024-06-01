@@ -423,7 +423,7 @@ const client_Pinginterval = setInterval(function ping() {//클라이언트 Heart
 }, 50000);
 
 const db_interval = setInterval(() => {
-    connection.query(`SELECT 1 FROM deviceStatus;`, function (error, results) {
+    connection.query(`SELECT 1 FROM boy_device;`, function (error, results) {
         if (error) {
             console.log('SELECT DeviceLog query error:');
             console.log(error);
@@ -467,9 +467,9 @@ app.get("/log_list", (req, res) => {//로그 목록
 });
 
 app.get("/device_list", (req, res) => {//장치 목록
-    connection.query(`SELECT id, state, device_type FROM deviceStatus;`, function (error, results) {
+    connection.query(`SELECT id, state, device_type FROM boy_device;`, function (error, results) {
         if (error) {
-            console.log('SELECT id, state, device_type FROM deviceStatus query error:');
+            console.log('SELECT id, state, device_type FROM boy_device query error:');
             console.log(error);
             return;
         }
@@ -481,7 +481,7 @@ app.get("/device_list", (req, res) => {//장치 목록
 app.get("/device_list_boy", (req, res) => {//장치 목록
     connection.query(`SELECT id, view_id, state, device_type FROM boy_device;`, function (error, results) {
         if (error) {
-            console.log('SELECT id, state, device_type FROM deviceStatus query error:');
+            console.log('SELECT id, state, device_type FROM boy_device query error:');
             console.log(error);
             return;
         }
@@ -493,7 +493,7 @@ app.get("/device_list_boy", (req, res) => {//장치 목록
 app.get("/device_list_girl", (req, res) => {//장치 목록
     connection.query(`SELECT id, view_id, state, device_type FROM girl_device;`, function (error, results) {
         if (error) {
-            console.log('SELECT id, state, device_type FROM deviceStatus query error:');
+            console.log('SELECT id, state, device_type FROM boy_device query error:');
             console.log(error);
             return;
         }
@@ -558,7 +558,7 @@ app.post("/push_request", (req, res) => {//알림 신청 기능
             res.status(304).send('이미 신청된 장치입니다.')
             return;
         } else {//중복 아니면 DB에 Token 등록
-            connection.query(`SELECT device_type FROM deviceStatus WHERE id = ?;`, [device_id], function (error, type_results) {
+            connection.query(`SELECT device_type FROM boy_device WHERE id = ?;`, [device_id], function (error, type_results) {
                 if (error) {
                     console.log('SELECT device_type query error:');
                     console.log(error);
@@ -567,7 +567,7 @@ app.post("/push_request", (req, res) => {//알림 신청 기능
 
                 connection.query(`INSERT INTO PushAlert (Token, device_id, Expect_Status, device_type) VALUES (?, ?, ?, ?);`, [token, device_id, expect_state, type_results[0].device_type], (error, results) => {
                     if (error) {
-                        console.log('deviceStatus Update query error:');
+                        console.log('boy_device Update query error:');
                         console.log(error);
                         return;
                     }
@@ -639,7 +639,7 @@ function StatusUpdate(id, state, type) {
     {
         return;
     }
-    connection.query(`SELECT device_type FROM deviceStatus WHERE id = ?;`, [id], function (error, results) {
+    connection.query(`SELECT device_type FROM boy_device WHERE id = ?;`, [id], function (error, results) {
         var type_string = "";
         if (results[0].device_type == "WASH") {
             type_string = "세탁기"
@@ -673,7 +673,7 @@ function StatusUpdate(id, state, type) {
 
         connection.query(`UPDATE boy_device SET state = ?, prev_state = ? WHERE id = ?;`, [state, state, id], (error, results) => {
             if (error) {
-                console.log('deviceStatus Update query error:');
+                console.log('boy_device Update query error:');
                 console.log(error);
                 return;
             }
@@ -691,9 +691,9 @@ function StatusUpdate(id, state, type) {
         });
 
         //Application과 Frontend에 현재 상태 DB 넘기기
-        connection.query(`SELECT id, state, device_type FROM deviceStatus WHERE id = ?;`, [id], function (error, results) {
+        connection.query(`SELECT id, state, device_type FROM boy_device WHERE id = ?;`, [id], function (error, results) {
             if (error) {
-                console.log('SELECT id, state, device_type FROM deviceStatus query error:');
+                console.log('SELECT id, state, device_type FROM boy_device query error:');
                 console.log(error);
                 return;
             }
@@ -704,9 +704,9 @@ function StatusUpdate(id, state, type) {
 
         if (state == 0 && type == 1)//ON
         {
-            connection.query(`UPDATE deviceStatus SET ON_time = ? WHERE id = ?;`, [moment().format(), id], (error, results) => {
+            connection.query(`UPDATE boy_device SET ON_time = ? WHERE id = ?;`, [moment().format(), id], (error, results) => {
                 if (error) {
-                    console.log('deviceStatus Update query error:');
+                    console.log('boy_device Update query error:');
                     console.log(error);
                     return;
                 }
@@ -714,7 +714,7 @@ function StatusUpdate(id, state, type) {
             });
             connection.query(`UPDATE boy_device SET ON_time = ? WHERE id = ?;`, [moment().format(), id], (error, results) => {
                 if (error) {
-                    console.log('deviceStatus Update query error:');
+                    console.log('boy_device Update query error:');
                     console.log(error);
                     return;
                 }
@@ -723,19 +723,19 @@ function StatusUpdate(id, state, type) {
         } else if (state == 1 && type == 1) {//OFF
             connection.query(`UPDATE boy_device SET OFF_time = ? WHERE id = ?;`, [moment().format(), id], (error, results) => {
                 if (error) {
-                    console.log('deviceStatus Update query error:');
+                    console.log('boy_device Update query error:');
                     console.log(error);
                     return;
                 }
             })
-            connection.query(`UPDATE deviceStatus SET OFF_time = ? WHERE id = ?;`, [moment().format(), id], (error, results) => {
+            connection.query(`UPDATE boy_device SET OFF_time = ? WHERE id = ?;`, [moment().format(), id], (error, results) => {
                 if (error) {
-                    console.log('deviceStatus Update query error:');
+                    console.log('boy_device Update query error:');
                     console.log(error);
                     return;
                 }
 
-                connection.query(`SELECT ON_time, OFF_time FROM deviceStatus WHERE id = ?;`, [id], function (error, results) {
+                connection.query(`SELECT ON_time, OFF_time FROM boy_device WHERE id = ?;`, [id], function (error, results) {
                     if (error) {
                         console.log('SELECT Token query error:');
                         console.log(error);
