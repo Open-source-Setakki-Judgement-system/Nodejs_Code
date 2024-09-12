@@ -800,7 +800,7 @@ function StatusUpdate(id, state, type) {
 }
 
 function FcmMultiCast(msg, token_array) {
-    fcm.messaging().sendMulticast(msg)
+    fcm.messaging().sendEachForMulticast(msg)
         .then((response) => {
             if (response.failureCount > 0) {
                 const failedTokens = [];
